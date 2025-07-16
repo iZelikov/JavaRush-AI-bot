@@ -7,5 +7,12 @@ services:
     restart: always
     env_file:
       - .env
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ./logs:/app/logs
+      - ./app:/app  # Для разработки с hot-reload
+      - ./data:/app/data  # Персистентные данные
