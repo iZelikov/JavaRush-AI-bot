@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  telebot:
+    build: .
+    container_name: telebot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
