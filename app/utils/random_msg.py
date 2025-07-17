@@ -1,4 +1,4 @@
-from app.config import BASE_DIR
+from config import BASE_DIR
 from random import choice
 
 def rnd_text() -> str:

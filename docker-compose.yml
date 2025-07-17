@@ -15,4 +15,3 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./app:/app  # Для разработки с hot-reload
-      - ./data:/app/data  # Персистентные данные

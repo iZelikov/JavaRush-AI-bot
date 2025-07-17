@@ -1,7 +1,7 @@
 import asyncio
-from app.config import BOT_TOKEN
-
 from aiogram import Bot, Dispatcher
+
+from config import BOT_TOKEN
 from handlers import cmd_handlers, msg_handlers
 
 
