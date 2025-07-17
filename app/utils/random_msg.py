@@ -1,8 +1,8 @@
-import os
+from app.config import BASE_DIR
 from random import choice
 
 def rnd_text() -> str:
-    BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-    with open(os.path.join(BASE_DIR, 'resources/texts/gopota.txt'), 'r' , encoding='utf8') as file:
+    text_filename = BASE_DIR / 'resources' / 'texts' / 'gopota.txt'
+    with open(text_filename, 'r' , encoding='utf8') as file:
         texts = file.read().split('\n')
         return choice(texts)

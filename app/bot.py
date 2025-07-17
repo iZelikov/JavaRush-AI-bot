@@ -1,32 +1,15 @@
 import asyncio
-from os import getenv
-from dotenv import load_dotenv
+from app.config import BOT_TOKEN
 
-from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
-
-from utils.random_msg import rnd_text
-
-load_dotenv()
-TOKEN = getenv("BOT_TOKEN")
-
-dp = Dispatcher()
+from aiogram import Bot, Dispatcher
+from handlers import cmd_handlers, msg_handlers
 
 
-# Command handler
-@dp.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-    await message.answer(f'Превед! {rnd_text()}')
-
-@dp.message(F.text)
-async def common_text_handler(message: Message) -> None:
-    await message.answer(f'Короче! {rnd_text()}')
-
-
-# Run the bot
 async def main() -> None:
-    bot = Bot(token=TOKEN)
+    dp = Dispatcher()
+    dp.include_routers(cmd_handlers.router, msg_handlers.router)
+    bot = Bot(token=BOT_TOKEN)
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 
