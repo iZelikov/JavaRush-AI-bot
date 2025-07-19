@@ -1,12 +1,12 @@
-from importlib.resources import read_text
-
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
+from datetime import datetime
 from utils.helpers import load_text, send_photo
+from utils.storage_factory import get_history_storage
 
 router = Router()
-
+storage = get_history_storage()
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
