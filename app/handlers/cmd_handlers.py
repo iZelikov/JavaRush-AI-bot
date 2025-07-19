@@ -17,45 +17,45 @@ async def cmd_start(message: Message):
 
 @router.message(Command('gpt'))
 async def cmd_gpt(message: Message):
-    await send_photo(message,'robots.jpg')
-    await message.answer(f'Чат ГоПоТу пока не завезли :( Ждём ключ!')
+    await send_photo(message,'company.jpg')
+    await message.answer(load_text('command_gpt.txt'))
 
 @router.message(Command('img'))
 async def cmd_img(message: Message):
     await send_photo(message,'mona-gopnik.jpg')
-    await message.answer(f'Скинь пару фоток - братва заценит. Можно вместе с мобилой.')
+    await message.answer(load_text('command_img.txt'))
 
 @router.message(Command('quiz'))
 async def cmd_quiz(message: Message):
-    await send_photo(message,'univer.jpg')
-    await message.answer(f'Вилкой в глаз или в JavaRush?! \nЭ-э-э... Типа мы с тебя спрашивать будем, а ты нам обоснуешь за шмот, ООП и международное положение, усёк?')
+    await send_photo(message,'vilka.jpg')
+    await message.answer(load_text('command_quiz.txt'))
 
 @router.message(Command('random'))
 async def cmd_random(message: Message):
-    await send_photo(message,'chat-gopota-landscape.jpg')
-    await message.answer(f'А ты курсе, что каждые пять минут общения с телеграм-ботом сокращают жизнь на пять минут?')
+    await send_photo(message,'random.jpg')
+    await message.answer(load_text('command_random.txt'))
 
 @router.message(Command('resume'))
-async def cmd_random(message: Message):
+async def cmd_resume(message: Message):
     await send_photo(message,'resume.jpg')
-    await message.answer(f'Давай колись, сколько у тя классов образования? Сэм-восэм е? Или даж ПТУ закончил? Питона душить умеешь? Ну и отлично! Зашлём тя в Гугол заместо Жопса или Цукермана или как там его... О! Серёги Блина!')
+    await message.answer(load_text('command_resume.txt'))
 
 @router.message(Command('sovet'))
-async def cmd_random(message: Message):
-    await send_photo(message,'robots.jpg')
-    await message.answer(f'Думаешь, какую киношку вечерком под пивко заценить, но стремаешься зашквариться? Да ты не тушуйся! Спроси у братвы. Пацаны плохого не посоветуют.')
+async def cmd_sovet(message: Message):
+    await send_photo(message,'company.jpg')
+    await message.answer(load_text('command_sovet.txt'))
 
 @router.message(Command('talk'))
-async def cmd_random(message: Message):
+async def cmd_talk(message: Message):
     await send_photo(message,'robots.jpg')
-    await message.answer(f'Присаживайся - поболтаем. Тут все пацаны в авторитете, не шестёрки какие. Выбирай любого.')
+    await message.answer(load_text('command_talk.txt'))
 
 @router.message(Command('train'))
-async def cmd_random(message: Message):
-    await send_photo(message,'chat-gopota.jpg')
-    await message.answer(f'Давай играть, кто больше слов на буржуйской фене сечёт! Не боись, на интерес играем, ну или на просто так.')
+async def cmd_train(message: Message):
+    await send_photo(message,'chat-gopota-landscape.jpg')
+    await message.answer(load_text('command_train.txt'))
 
 @router.message(Command('trans'))
-async def cmd_random(message: Message):
+async def cmd_trans(message: Message):
     await send_photo(message,'univer.jpg')
-    await message.answer(f'Это Дрон - он у нас полиглот... В хорошем смысле! Как глотнёт сорокоградусной, так начинает всякую туфту гнать не по нашему. Да ты сам проверь! Он и на китайском бакланит, и на эльфийском, и даж на клингонском!')
+    await message.answer(load_text('command_trans.txt'))
