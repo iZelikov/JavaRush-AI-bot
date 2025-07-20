@@ -12,3 +12,4 @@ REDIS_DB = getenv("REDIS_DB")
 MAX_HISTORY = getenv("MAX_HISTORY")
 
 BASE_DIR = Path(__file__).parent.resolve()
+

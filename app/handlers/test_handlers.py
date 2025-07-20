@@ -20,9 +20,17 @@ async def create_redis_pool() -> Redis:
 async def cmd_test(message: Message):
     user_id = message.from_user.id
     history = await storage.get_history(user_id)
-    history.append(f"{user_id} - {datetime.now().strftime('%H:%M:%S')}: Тест")
+    history.append({
+        "role": "assistant",
+        "content": f"{user_id} - {datetime.now().strftime('%H:%M:%S')}: Тест"})
     await storage.save_history(user_id, history)
-    await message.answer("\n".join(history))
+    await message.answer("\n".join(map(str, history)))
+
+@router.message(Command('test_clear'))
+async def cmd_test(message: Message):
+    user_id = message.from_user.id
+    await storage.reset_history(user_id)
+    await message.answer(f'История переписки юзера {user_id} очищена!')
 
 @router.message(Command("redis"))
 async def check_redis(message: Message):

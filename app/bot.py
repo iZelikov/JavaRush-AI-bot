@@ -3,10 +3,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommandScopeDefault, MenuButtonCommands
 
 from config import BOT_TOKEN
-
 from handlers import cmd_handlers, msg_handlers, test_handlers
 from keyboards.all_kbs import set_commands
-
 
 async def main() -> None:
     dp = Dispatcher()

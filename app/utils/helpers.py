@@ -21,6 +21,9 @@ def load_sql(filename: str, fragment=0) -> str:
     sql_name = Path('sql', filename)
     return load_text(sql_name, fragment)
 
+def load_prompt(filename: str) -> str:
+    prompt_name = Path('prompts', filename)
+    return load_text(prompt_name)
 
 async def send_photo(message: Message, img_name: str):
     img_path = BASE_DIR / 'resources' / 'images' / img_name
