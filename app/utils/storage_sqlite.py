@@ -3,6 +3,7 @@ import json
 import os
 from typing import List, Dict, Optional
 from .storage import HistoryStorage
+from utils.helpers import load_sql
 
 
 class SQLiteStorage(HistoryStorage):
@@ -17,41 +18,9 @@ class SQLiteStorage(HistoryStorage):
         """Создаем таблицу при инициализации"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                           CREATE TABLE IF NOT EXISTS history
-                           (
-                               user_id
-                               INTEGER
-                               PRIMARY
-                               KEY,
-                               messages
-                               TEXT
-                               NOT
-                               NULL
-                               DEFAULT
-                               '[]',
-                               created_at
-                               TIMESTAMP
-                               DEFAULT
-                               CURRENT_TIMESTAMP,
-                               updated_at
-                               TIMESTAMP
-                               DEFAULT
-                               CURRENT_TIMESTAMP
-                           )
-                           ''')
+            cursor.execute(load_sql('create_table_history.sql', 0))
 
-            cursor.execute('''
-                           CREATE TRIGGER IF NOT EXISTS update_history_timestamp
-                AFTER
-                           UPDATE ON history
-                               FOR EACH ROW
-                           BEGIN
-                           UPDATE history
-                           SET updated_at = CURRENT_TIMESTAMP
-                           WHERE user_id = OLD.user_id;
-                           END;
-                           ''')
+            cursor.execute(load_sql('create_table_history.sql',1))
             conn.commit()
 
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
@@ -60,7 +29,7 @@ class SQLiteStorage(HistoryStorage):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT messages FROM history WHERE user_id = ?",
+                load_sql('history.sql',0),
                 (user_id,))
             row = cursor.fetchone()
             return json.loads(row['messages']) if row else []
@@ -71,12 +40,7 @@ class SQLiteStorage(HistoryStorage):
             cursor = conn.cursor()
             messages_json = json.dumps(history)
 
-            # Используем UPSERT (INSERT OR REPLACE)
-            cursor.execute('''
-                           INSERT INTO history (user_id, messages)
-                           VALUES (?, ?) ON CONFLICT(user_id) DO
-                           UPDATE SET messages = excluded.messages
-                           ''', (user_id, messages_json))
+            cursor.execute(load_sql('history.sql',1), (user_id, messages_json))
             conn.commit()
 
     async def reset_history(self, user_id: int):
@@ -84,7 +48,7 @@ class SQLiteStorage(HistoryStorage):
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "DELETE FROM history WHERE user_id = ?",
+                load_sql('history.sql',2),
                 (user_id,))
             conn.commit()
 
@@ -92,9 +56,5 @@ class SQLiteStorage(HistoryStorage):
         """Очистка старых сессий"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                           DELETE
-                           FROM history
-                           WHERE julianday('now') - julianday(updated_at) > ?
-                           ''', (max_age_days,))
+            cursor.execute(load_sql('cleanup_sessions.sql'), (max_age_days,))
             conn.commit()

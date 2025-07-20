@@ -17,9 +17,9 @@ def load_text(filename: str | Path, fragment=0) -> str:
         return text_file.read().split('\n\n')[fragment]
 
 
-def load_sql(filename: str) -> str:
+def load_sql(filename: str, fragment=0) -> str:
     sql_name = Path('sql', filename)
-    return load_text(sql_name)
+    return load_text(sql_name, fragment)
 
 
 async def send_photo(message: Message, img_name: str):

@@ -9,7 +9,6 @@ def get_history_storage():
 
     if env == "nas" or os.getenv("USE_SQLITE"):
         local_path = BASE_DIR.parent / 'data/chat_history.db'
-        print(local_path)
         db_path = os.getenv("SQLITE_DB_PATH", local_path)
         return SQLiteStorage(db_path)
 
