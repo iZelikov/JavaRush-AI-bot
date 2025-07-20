@@ -38,7 +38,8 @@ services:
         max-file: "3"
     volumes:
       - ./logs:/app/logs
-      - ./app:/app  # Для разработки с hot-reload
+      - ./app:/app
+      - ./data:/data
 
 volumes:
   redis_data:
