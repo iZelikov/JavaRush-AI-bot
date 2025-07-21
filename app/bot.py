@@ -15,12 +15,18 @@ async def main() -> None:
     )
     bot = Bot(token=BOT_TOKEN)
 
-    # await bot.delete_my_commands(scope=None, language_code=None)
-    await bot.set_my_commands(commands=set_commands(), scope=BotCommandScopeDefault())
+    await bot.set_my_commands(
+        commands=set_commands(),
+        scope=BotCommandScopeDefault()
+    )
     await bot.set_chat_menu_button(menu_button=MenuButtonCommands())
 
     await bot.delete_webhook(drop_pending_updates=True)
+
+    print('Бот запущен')
+    # raise Exception('Разберись, с Dependency Injection хранилищ!')
     await dp.start_polling(bot)
+
 
 
 if __name__ == "__main__":

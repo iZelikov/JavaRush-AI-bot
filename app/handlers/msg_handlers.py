@@ -1,16 +1,16 @@
 from aiogram import Router, F
 from aiogram.types import Message
 
-from utils.helpers import rnd_text, load_prompt
-from utils.storage_factory import get_history_storage
+from utils.helpers import load_prompt
+from storage.factory import create_storages
 from utils.gpt import gpt
 
 router = Router()
-storage = get_history_storage()
-
+state_store, history_store = create_storages()
 
 
 @router.message(F.text)
 async def base_messages(message: Message):
+    answer_message = await message.answer('думает...')
     response = await gpt.get_response(message, load_prompt('gpt.txt'))
-    await message.answer(response)
+    await answer_message.edit_text(response)
