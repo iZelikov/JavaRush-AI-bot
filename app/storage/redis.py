@@ -1,13 +1,14 @@
 import json
 from redis.asyncio import Redis
-from storage.abs_storages import HistoryStorage, StateStorage
+from storage.abstract_storage import AbstractStorage
 from typing import List, Dict, Optional, Any
 
 
-class RedisHistoryStorage(HistoryStorage):
-    def __init__(self, redis_url: str):
+class RedisStorage(AbstractStorage):
+
+    def __init__(self, redis_url: str, ttl: int = 3600):
         self.redis = Redis.from_url(redis_url)
-        self.ttl = 3600  # 1 час
+        self.ttl = ttl
 
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
         key = f"user:{user_id}:messages"
@@ -21,12 +22,6 @@ class RedisHistoryStorage(HistoryStorage):
     async def reset_history(self, user_id: int):
         key = f"user:{user_id}:messages"
         await self.redis.delete(key)
-
-
-class RedisStateStorage(StateStorage):
-    def __init__(self, redis_url: str, ttl: int = 3600):
-        self.redis = Redis.from_url(redis_url)
-        self.ttl = ttl
 
     async def get_state(self, user_id: int) -> Optional[str]:
         return await self.redis.get(f"user:{user_id}:state")

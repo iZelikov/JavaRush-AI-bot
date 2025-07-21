@@ -2,18 +2,29 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommandScopeDefault, MenuButtonCommands
 
-from config import BOT_TOKEN
-from handlers import cmd_handlers, msg_handlers, test_handlers
+from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL, ENV
+from handlers.cmd_handlers import cmd_router
+from handlers.msg_handlers import msg_router
+from handlers.test_handlers import test_router
+from middleware.injector import InjectorMiddleware
+from storage.factory import get_storage
+from utils.gpt import GPT
 from keyboards.all_kbs import set_commands
 
+
 async def main() -> None:
-    dp = Dispatcher()
-    dp.include_routers(test_handlers.router)
-    dp.include_routers(
-        cmd_handlers.router,
-        msg_handlers.router,
-    )
     bot = Bot(token=BOT_TOKEN)
+    storage = get_storage()
+    gpt = GPT(GPT_TOKEN, storage, GPT_BASE_URL)
+    dp = Dispatcher()
+    dp.update.middleware(InjectorMiddleware(gpt=gpt,storage=storage))
+    # bot.gpt = gpt
+    # bot.storage = storage
+
+    if ENV == 'dev':
+        dp.include_routers(test_router)
+
+    dp.include_routers(cmd_router, msg_router)
 
     await bot.set_my_commands(
         commands=set_commands(),

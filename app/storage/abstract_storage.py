@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
 
-class HistoryStorage(ABC):
+class AbstractStorage(ABC):
     @abstractmethod
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
         pass
@@ -15,8 +15,6 @@ class HistoryStorage(ABC):
     async def reset_history(self, user_id: int):
         pass
 
-
-class StateStorage(ABC):
     @abstractmethod
     async def get_state(self, user_id: int) -> Optional[str]:
         pass

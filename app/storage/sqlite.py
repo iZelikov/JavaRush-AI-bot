@@ -2,17 +2,32 @@ import os
 import sqlite3
 import json
 from typing import List, Dict, Optional, Any
-from storage.abs_storages import HistoryStorage, StateStorage
+from storage.abstract_storage import AbstractStorage
 
 
-class SQLiteHistoryStorage(HistoryStorage):
+class SQLiteStorage(AbstractStorage):
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
-        self._init_db()
         self.max_history = os.getenv('MAX_HISTORY')
+        self._init_db()
 
     def _init_db(self):
         cursor = self.conn.cursor()
+
+        # создаём таблицу стейтов (если не существует)
+        cursor.execute('''
+                          CREATE TABLE IF NOT EXISTS fsm_states
+                          (
+                              user_id
+                              INTEGER
+                              PRIMARY
+                              KEY,
+                              state
+                              TEXT,
+                              data
+                              TEXT
+                          )
+                          ''')
 
         # Создаем таблицу истории (если не существует)
         cursor.execute('''
@@ -53,9 +68,8 @@ class SQLiteHistoryStorage(HistoryStorage):
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
         cursor = self.conn.cursor()
         cursor.execute(
-            "SELECT role, content FROM chat_history "
-            "WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?",
-            (user_id, self.max_history)
+            "SELECT role, content FROM chat_history WHERE user_id = ?",
+            (user_id,)
         )
         return [{"role": row[0], "content": row[1]} for row in cursor.fetchall()]
 
@@ -84,27 +98,6 @@ class SQLiteHistoryStorage(HistoryStorage):
             (user_id,)
         )
         self.conn.commit()
-
-
-class SQLiteStateStorage(StateStorage):
-    def __init__(self, conn: sqlite3.Connection):
-        self.conn = conn
-        self._init_db()
-
-    def _init_db(self):
-        self.conn.execute('''
-                          CREATE TABLE IF NOT EXISTS fsm_states
-                          (
-                              user_id
-                              INTEGER
-                              PRIMARY
-                              KEY,
-                              state
-                              TEXT,
-                              data
-                              TEXT
-                          )
-                          ''')
 
     async def get_state(self, user_id: int) -> Optional[str]:
         cursor = self.conn.execute(

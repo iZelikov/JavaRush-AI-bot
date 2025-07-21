@@ -1,33 +1,28 @@
-from storage.abs_storages import HistoryStorage, StateStorage
+from storage.abstract_storage import AbstractStorage
 from collections import defaultdict
 from typing import List, Dict, Optional, Any
 import asyncio
 
 
-class MemoryHistoryStorage(HistoryStorage):
+class MemoryStorage(AbstractStorage):
     def __init__(self):
-        self.storage = defaultdict(list)
+        self.history_storage = defaultdict(list)
+        self.states = defaultdict(str)
+        self.data = defaultdict(dict)
         self.lock = asyncio.Lock()
 
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
         async with self.lock:
-            return self.storage[user_id].copy()
+            return self.history_storage[user_id].copy()
 
     async def save_history(self, user_id: int, history: List[Dict[str, str]]):
         async with self.lock:
-            self.storage[user_id] = history
+            self.history_storage[user_id] = history
 
     async def reset_history(self, user_id: int):
         async with self.lock:
-            if user_id in self.storage:
-                del self.storage[user_id]
-
-
-class MemoryStateStorage(StateStorage):
-    def __init__(self):
-        self.states = defaultdict(str)
-        self.data = defaultdict(dict)
-        self.lock = asyncio.Lock()
+            if user_id in self.history_storage:
+                del self.history_storage[user_id]
 
     async def get_state(self, user_id: int) -> Optional[str]:
         async with self.lock:

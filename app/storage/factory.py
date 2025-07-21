@@ -2,13 +2,13 @@ import os
 import sqlite3
 from pathlib import Path
 
-from storage.sqlite import SQLiteHistoryStorage, SQLiteStateStorage
-from storage.memory import MemoryStateStorage, MemoryHistoryStorage
-from storage.redis import RedisStateStorage, RedisHistoryStorage
+from storage.sqlite import SQLiteStorage
+from storage.memory import MemoryStorage
+from storage.redis import RedisStorage
 from config import BASE_DIR
 
 
-def create_storages():
+def get_storage():
     storage_type = os.getenv("STORAGE_TYPE", "memory")
 
     if storage_type == "sqlite":
@@ -16,20 +16,13 @@ def create_storages():
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
         conn = sqlite3.connect(db_path)
-        return (
-            SQLiteStateStorage(conn),
-            SQLiteHistoryStorage(conn)
-        )
+        return SQLiteStorage(conn)
+
 
     if storage_type == "redis":
         redis_url = os.getenv("REDIS_URL")
         ttl = int(os.getenv("REDIS_TTL", 3600))
-        return (
-            RedisStateStorage(redis_url, ttl),
-            RedisHistoryStorage(redis_url, ttl)
-        )
+        return RedisStorage(redis_url, ttl)
 
     # По умолчанию - in-memory хранилища
-    return MemoryStateStorage(), MemoryHistoryStorage()
-
-create_storages()
+    return MemoryStorage()

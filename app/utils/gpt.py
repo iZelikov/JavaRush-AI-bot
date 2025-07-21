@@ -1,15 +1,13 @@
 from openai import OpenAI
 from aiogram.types import Message
 
-from config import GPT_TOKEN, GPT_BASE_URL
+from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_prompt
-from storage.factory import create_storages
-
 
 class GPT:
-    def __init__(self, gpt_key, base_url=None):
+    def __init__(self, gpt_key, storage: AbstractStorage, base_url=None):
         self.client = OpenAI(api_key=gpt_key, base_url=base_url)
-        self.storage = create_storages()[1]
+        self.storage = storage
         self.prompt = load_prompt('base_prompt.txt')
         self.model = 'gpt-4o'
         self.max_tokens = 3000
@@ -40,6 +38,3 @@ class GPT:
 
         await self.storage.save_history(user_id, history)
         return answer_text
-
-
-gpt = GPT(GPT_TOKEN, GPT_BASE_URL)
