@@ -4,10 +4,11 @@ from aiogram.types import Message
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_prompt
 
+
 class GPT:
-    def __init__(self, gpt_key, storage: AbstractStorage, base_url=None):
+    def __init__(self, gpt_key, db: AbstractStorage, base_url=None):
         self.client = OpenAI(api_key=gpt_key, base_url=base_url)
-        self.storage = storage
+        self.storage = db
         self.prompt = load_prompt('base_prompt.txt')
         self.model = 'gpt-4o'
         self.max_tokens = 3000
@@ -31,10 +32,29 @@ class GPT:
 
         answer_text = response.choices[0].message.content
 
-        history.extend([
+        history += [
             {"role": "user", "content": request_text},
             {"role": "assistant", "content": answer_text}
-        ])
+        ]
 
         await self.storage.save_history(user_id, history)
+        return answer_text
+
+    async def ask_once(self, message: Message, prompt=''):
+        user_id = message.from_user.id
+        request_text = message.text
+
+        messages = [
+            {"role": "system", "content": self.prompt + prompt},
+            {"role": "user", "content": request_text}
+        ]
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature
+        )
+
+        answer_text = response.choices[0].message.content
         return answer_text

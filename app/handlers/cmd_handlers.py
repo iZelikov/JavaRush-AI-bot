@@ -1,7 +1,9 @@
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
+from states.states import GPTDIalog
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_text, send_photo
 
@@ -9,7 +11,8 @@ cmd_router = Router()
 
 
 @cmd_router.message(CommandStart())
-async def cmd_start(message: Message, storage:AbstractStorage):
+async def cmd_start(message: Message, storage:AbstractStorage, state: FSMContext):
+    await state.clear()
     await storage.reset_history(message.from_user.id)
     help_text = load_text('help.txt')
     await send_photo(message, 'chat-gopota.jpg')
@@ -18,7 +21,9 @@ async def cmd_start(message: Message, storage:AbstractStorage):
 
 
 @cmd_router.message(Command('gpt'))
-async def cmd_gpt(message: Message, storage:AbstractStorage):
+async def cmd_gpt(message: Message, storage:AbstractStorage, state: FSMContext):
+    await state.clear()
+    await state.set_state(GPTDIalog.active_dialog)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'company.jpg')
     await message.answer(load_text('command_gpt.txt', 0))

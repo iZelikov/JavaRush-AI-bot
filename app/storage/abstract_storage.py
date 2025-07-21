@@ -1,8 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import List, Dict, Any, Optional
 
+from aiogram.fsm.storage.base import BaseStorage
 
-class AbstractStorage(ABC):
+
+class AbstractStorage(BaseStorage):
     @abstractmethod
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
         pass
@@ -28,9 +30,18 @@ class AbstractStorage(ABC):
         pass
 
     @abstractmethod
-    async def update_data(self, user_id: int, data: Dict[str, Any]):
+    async def set_data(self, user_id: int, data: Dict[str, Any]):
         pass
 
     @abstractmethod
+    async def update_data(self, user_id: int, data: Dict[str, Any]):
+        pass
+
+
+    @abstractmethod
     async def reset_state(self, user_id: int):
+        pass
+
+    @abstractmethod
+    async def close(self):
         pass

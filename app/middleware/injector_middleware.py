@@ -9,7 +9,7 @@ from storage.factory import get_storage
 class InjectorMiddleware(BaseMiddleware):
     def __init__(self, gpt: GPT, storage: AbstractStorage):
         self.gpt = gpt
-        self.storage = get_storage()
+        self.storage = storage
 
     async def __call__(
         self,

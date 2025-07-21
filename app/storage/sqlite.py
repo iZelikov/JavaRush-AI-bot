@@ -2,6 +2,9 @@ import os
 import sqlite3
 import json
 from typing import List, Dict, Optional, Any
+
+from aiogram.fsm.storage.base import StorageKey
+
 from storage.abstract_storage import AbstractStorage
 
 
@@ -99,43 +102,53 @@ class SQLiteStorage(AbstractStorage):
         )
         self.conn.commit()
 
-    async def get_state(self, user_id: int) -> Optional[str]:
+    async def get_state(self, key: StorageKey) -> Optional[str]:
         cursor = self.conn.execute(
             "SELECT state FROM fsm_states WHERE user_id = ?",
-            (user_id,)
+            (key.user_id,)
         )
         row = cursor.fetchone()
         return row[0] if row else None
 
-    async def set_state(self, user_id: int, state: str):
-        with sqlite3.connect(self.db_path) as conn:
+    async def set_state(self, key: StorageKey, state: str):
+        with self.conn as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO user_states (user_id, state) VALUES (?, ?)",
-                (user_id, state)
+                "INSERT OR REPLACE INTO fsm_states (user_id, state) VALUES (?, ?)",
+                (key.user_id, state.state if state else None)
             )
 
-    async def get_data(self, user_id: int) -> Dict[str, Any]:
-        with sqlite3.connect(self.db_path) as conn:
+    async def get_data(self, key: StorageKey) -> Dict[str, Any]:
+        with self.conn as conn:
             cursor = conn.execute(
-                "SELECT data FROM user_states WHERE user_id = ?",
-                (user_id,)
+                "SELECT data FROM fsm_states WHERE user_id = ?",
+                (key.user_id,)
             )
             row = cursor.fetchone()
             return json.loads(row[0]) if row and row[0] else {}
 
-    async def update_data(self, user_id: int, data: Dict[str, Any]):
-        current_data = await self.get_data(user_id)
+    async def set_data(self, key: StorageKey, data: Dict[str, Any]) -> None:
+        with self.conn as conn:
+            conn.execute(
+                "UPDATE fsm_states SET data = ? WHERE user_id = ?",
+                (json.dumps(data), key.user_id)
+            )
+
+    async def update_data(self, key: StorageKey, data: Dict[str, Any]):
+        current_data = await self.get_data(key.user_id)
         current_data.update(data)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self.conn as conn:
             conn.execute(
-                "UPDATE user_states SET data = ? WHERE user_id = ?",
-                (json.dumps(current_data), user_id)
+                "UPDATE fsm_states SET data = ? WHERE user_id = ?",
+                (json.dumps(current_data), key.user_id)
             )
 
-    async def reset_state(self, user_id: int):
-        with sqlite3.connect(self.db_path) as conn:
+    async def reset_state(self, key: StorageKey):
+        with self.conn as conn:
             conn.execute(
-                "DELETE FROM user_states WHERE user_id = ?",
-                (user_id,)
+                "DELETE FROM fsm_states WHERE user_id = ?",
+                (key.user_id,)
             )
+
+    async def close(self) -> None:
+        self.conn.close()
