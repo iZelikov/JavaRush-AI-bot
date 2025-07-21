@@ -26,7 +26,7 @@ async def main() -> None:
     if ENV == 'dev':
         dp.include_routers(test_router)
 
-    dp.include_routers(dialog_router, cmd_router, msg_router)
+    dp.include_routers(cmd_router, dialog_router, msg_router)
 
     await bot.set_my_commands(
         commands=set_commands(),

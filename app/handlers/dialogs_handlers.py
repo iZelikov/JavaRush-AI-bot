@@ -1,5 +1,8 @@
+import asyncio
+
 from aiogram import Router, F
 import aiohttp
+from aiogram.enums import ChatAction
 from aiogram.types import Message
 
 from states.states import ImageRecognition, RandomFacts
@@ -17,9 +20,9 @@ async def handle_photo(message: Message, gpt: GPT):
     file_url = f"https://api.telegram.org/file/bot{message.bot.id}/{file_path}"
 
     # Временная затычка пока нет ключа...
-    msg = await message.answer('рассматривает фото...')
-    response_text  = await gpt.ask_once(message, load_prompt('blind.txt'))
-    await msg.edit_text(response_text)
+    answer_message = await message.answer('рассматривает фото...')
+    response = await gpt.ask_once(message, load_prompt('blind.txt'))
+    await answer_message.edit_text(response)
 
     # Скачиваем фото
     # async with aiohttp.ClientSession() as session:
@@ -34,6 +37,6 @@ async def handle_photo(message: Message, gpt: GPT):
 
 @dialog_router.message(F.text, RandomFacts.next_fact)
 async def random_fact(message: Message, gpt: GPT):
+    response = await gpt.ask_once(message, load_prompt('random_fact.txt'))
     answer_message = await message.answer('вспоминает...')
-    response = await gpt.ask_once(message, load_prompt('randpm_fact.txt'))
     await answer_message.edit_text(response)
