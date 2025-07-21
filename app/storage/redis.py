@@ -15,17 +15,17 @@ class RedisStorage(AbstractStorage):
         self.ttl = ttl
 
     async def get_history(self, user_id: int) -> List[Dict[str, str]]:
-        key = f"user:{user_id}:messages"
-        history = await self.redis.get(key)
+        key_name = f"user:{user_id}:messages"
+        history = await self.redis.get(key_name)
         return json.loads(history) if history else []
 
     async def save_history(self, user_id: int, history: List[Dict[str, str]]):
-        key = f"user:{user_id}:messages"
-        await self.redis.setex(key, self.ttl, json.dumps(history))
+        key_name = f"user:{user_id}:messages"
+        await self.redis.setex(key_name, self.ttl, json.dumps(history))
 
     async def reset_history(self, user_id: int):
-        key = f"user:{user_id}:messages"
-        await self.redis.delete(key)
+        key_name = f"user:{user_id}:messages"
+        await self.redis.delete(key_name)
 
     async def get_state(self, key: StorageKey) -> Optional[str]:
         return await self.redis.get(f"user:{key.user_id}:state")

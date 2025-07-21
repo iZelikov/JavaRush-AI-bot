@@ -1,5 +1,6 @@
 from aiogram import Router, Bot
 from aiogram.filters import Command
+from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import Message
 from datetime import datetime
 from redis.asyncio import Redis
@@ -18,10 +19,14 @@ async def create_redis_pool() -> Redis:
 @test_router.message(Command('test'))
 async def cmd_test(message: Message, storage: AbstractStorage):
     user_id = message.from_user.id
+    bot_id = message.bot.id
+    chat_id = message.chat.id
+    key = StorageKey(bot_id,chat_id, user_id)
     history = await storage.get_history(user_id)
+    state = await storage.get_state(key)
     history.append({
         "role": "assistant",
-        "content": f"{user_id} - {datetime.now().strftime('%H:%M:%S')}: Тест"})
+        "content": f"{user_id} - {datetime.now().strftime('%H:%M:%S')}: {state}"})
     await storage.save_history(user_id, history)
     await message.answer("\n".join(map(str, history)))
 

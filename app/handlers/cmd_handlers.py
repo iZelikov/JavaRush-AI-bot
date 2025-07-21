@@ -3,7 +3,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from states.states import GPTDIalog
+from states.states import GPTDIalog, ImageRecognition, RandomFacts
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_text, send_photo
 
@@ -31,7 +31,9 @@ async def cmd_gpt(message: Message, storage:AbstractStorage, state: FSMContext):
 
 
 @cmd_router.message(Command('img'))
-async def cmd_img(message: Message, storage:AbstractStorage):
+async def cmd_img(message: Message, storage:AbstractStorage, state: FSMContext):
+    await state.clear()
+    await state.set_state(ImageRecognition.ready_to_accept)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'mona-gopnik.jpg')
     await message.answer(load_text('command_img.txt'))
@@ -45,7 +47,9 @@ async def cmd_quiz(message: Message, storage:AbstractStorage):
 
 
 @cmd_router.message(Command('random'))
-async def cmd_random(message: Message, storage:AbstractStorage):
+async def cmd_random(message: Message, storage:AbstractStorage, state: FSMContext):
+    await state.clear()
+    await state.set_state(RandomFacts.next_fact)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'random.jpg')
     await message.answer(load_text('command_random.txt'))

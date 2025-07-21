@@ -4,6 +4,7 @@ from aiogram.types import BotCommandScopeDefault, MenuButtonCommands
 
 from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL, ENV
 from handlers.cmd_handlers import cmd_router
+from handlers.dialogs_handlers import dialog_router
 from handlers.msg_handlers import msg_router
 from handlers.test_handlers import test_router
 from middleware.injector_middleware import InjectorMiddleware
@@ -25,7 +26,7 @@ async def main() -> None:
     if ENV == 'dev':
         dp.include_routers(test_router)
 
-    dp.include_routers(cmd_router, msg_router)
+    dp.include_routers(dialog_router, cmd_router, msg_router)
 
     await bot.set_my_commands(
         commands=set_commands(),
