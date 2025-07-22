@@ -8,3 +8,6 @@ class ImageRecognition(StatesGroup):
 
 class RandomFacts(StatesGroup):
     next_fact = State()
+
+class Quiz(StatesGroup):
+    game = State()

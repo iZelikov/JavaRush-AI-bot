@@ -1,51 +1,87 @@
 import base64
+import os
 
 import aiohttp
-from openai import OpenAI
-from aiogram.types import Message
+import logging
+from typing import Optional, List, Dict
 
+from aiogram.types import Message
+from openai import OpenAI, RateLimitError, APIError, Timeout
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_prompt
-from config import GPT_TOKEN
+from config import API_VISION_TOKEN
+
+logger = logging.getLogger(__name__)
 
 
 class GPT:
-    def __init__(self, gpt_key, db: AbstractStorage, base_url=None):
+    def __init__(self, gpt_key: str, db: AbstractStorage, base_url: Optional[str] = None):
         self.client = OpenAI(api_key=gpt_key, base_url=base_url)
         self.storage = db
         self.prompt = load_prompt('base_prompt.txt')
-        self.model = 'gpt-4o'
+        self.model = os.getenv('GPT_MODEL') or 'gpt-4o'
         self.max_tokens = 3000
         self.temperature = 0.8
 
-    async def get_response(self, message: Message, prompt="") -> str:
+    async def _send_chat_completion(
+            self,
+            messages: List[Dict],
+            model: Optional[str] = None,
+            max_tokens: Optional[int] = None,
+            temperature: Optional[float] = None,
+    ) -> str:
+        model = model or self.model
+        max_tokens = max_tokens or self.max_tokens
+        temperature = temperature if temperature is not None else self.temperature
+
+        try:
+            response = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+            return response.choices[0].message.content.strip()
+
+        except RateLimitError:
+            logger.warning("Rate limit exceeded")
+            return 'Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди чутка.'
+
+        except Timeout:
+            logger.error("GPT API timeout")
+            return 'GPT молчит как рыба об лёд. Попробуй позже.'
+
+        except APIError as e:
+            logger.error(f"OpenAI API Error: {e}")
+            return 'Электронный болван говорит, что у тебя GPT API не такой как у него.'
+
+        except Exception as e:
+            logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
+            return 'Произошла неведомая фигня... GPT ушёл в отказ.'
+
+    async def dialog(self, message: Message, prompt: str = "") -> str:
         user_id = message.from_user.id
         request_text = message.text or message.caption or ""
+
         history = await self.storage.get_history(user_id)
 
         messages = [
-                       {"role": "system", "content": self.prompt + prompt}
-                   ] + history + [{"role": "user", "content": request_text}]
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature
-        )
-
-        answer_text = response.choices[0].message.content
-
-        history += [
-            {"role": "user", "content": request_text},
-            {"role": "assistant", "content": answer_text}
+            {"role": "system", "content": self.prompt + prompt},
+            *history,
+            {"role": "user", "content": request_text}
         ]
 
-        await self.storage.save_history(user_id, history)
-        return answer_text
+        response_text = await self._send_chat_completion(messages)
 
-    async def ask_once(self, message: Message, prompt=''):
-        user_id = message.from_user.id
+        # Обновление истории
+        history += [
+            {"role": "user", "content": request_text},
+            {"role": "assistant", "content": response_text}
+        ]
+        await self.storage.save_history(user_id, history)
+        return response_text
+
+    async def ask_once(self, message: Message, prompt: str = "") -> str:
         request_text = message.text or message.caption or ""
 
         messages = [
@@ -53,20 +89,13 @@ class GPT:
             {"role": "user", "content": request_text}
         ]
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature
-        )
-
-        answer_text = response.choices[0].message.content
-        return answer_text
+        return await self._send_chat_completion(messages)
 
     async def ask_gpt_vision(self, image_bytes: bytes, prompt: str = "Что изображено на этом фото?") -> str:
         base64_image = base64.b64encode(image_bytes).decode("utf-8")
+
         headers = {
-            "Authorization": f"Bearer {GPT_TOKEN}",
+            "Authorization": f"Bearer {API_VISION_TOKEN}",
             "Content-Type": "application/json",
         }
 
@@ -89,13 +118,22 @@ class GPT:
             "max_tokens": 1000
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload) as resp:
-                data = await resp.json()
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20)) as session:
+                async with session.post("https://api.openai.com/v1/chat/completions", headers=headers,
+                                        json=payload) as resp:
+                    data = await resp.json()
+                    logger.debug("GPT VISION RESPONSE: %s", data)
 
-                print("GPT VISION RESPONSE:", data)
+                    if "choices" not in data:
+                        raise ValueError(f"OpenAI ответ не содержит 'choices': {data}")
 
-                if "choices" not in data:
-                    raise ValueError(f"OpenAI ответ не содержит 'choices': {data}")
+                    return data["choices"][0]["message"]["content"].strip()
 
-                return data["choices"][0]["message"]["content"]
+        except aiohttp.ClientError as e:
+            logger.exception("Ошибка при запросе GPT Vision")
+            return "GPT Vision зазнался и не отвечает. Может у тя инет барахлит или токен не такой?."
+
+        except Exception as e:
+            logger.exception("Непредвиденная ошибка GPT Vision")
+            return "Картинка битая пришла или ещё какая фигня приключилась. Скинь другую!"

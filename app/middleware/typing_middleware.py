@@ -8,6 +8,10 @@ from typing import Any, Callable, Awaitable, Dict
 
 
 class TypingMiddleware(BaseMiddleware):
+    '''
+    Должен автоматически добавлять "typing..." в моменты пока gpt обдумывает ответ.
+    Как обычно, сгенерированный нейросетью кусок кода работает не, так как надо :(
+    '''
     def __init__(self, interval: float = 3.0):
         self.interval = interval
 

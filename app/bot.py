@@ -1,5 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.types import BotCommandScopeDefault, MenuButtonCommands
 
 from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL, ENV
@@ -15,13 +17,16 @@ from keyboards.all_kbs import set_commands
 
 
 async def main() -> None:
-    bot = Bot(token=BOT_TOKEN)
+    bot = Bot(token=BOT_TOKEN,
+              default=DefaultBotProperties(
+                  parse_mode=ParseMode.MARKDOWN
+              )
+              )
     storage = get_storage()
     gpt = GPT(GPT_TOKEN, storage, GPT_BASE_URL)
     dp = Dispatcher(storage=storage)
-    dp.update.middleware(InjectorMiddleware(gpt=gpt,storage=storage))
+    dp.update.middleware(InjectorMiddleware(gpt=gpt, storage=storage))
     dp.update.middleware(TypingMiddleware(interval=2.5))
-
 
     if ENV == 'dev':
         dp.include_routers(test_router)
@@ -39,7 +44,6 @@ async def main() -> None:
     print('Бот запущен')
     # raise Exception('Разберись, с Dependency Injection хранилищ!')
     await dp.start_polling(bot)
-
 
 
 if __name__ == "__main__":

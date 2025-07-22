@@ -5,11 +5,18 @@ import aiohttp
 from aiogram.enums import ChatAction
 from aiogram.types import Message
 
-from states.states import ImageRecognition, RandomFacts
+from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz
 from utils.gpt import GPT
 from utils.helpers import load_prompt
 
 dialog_router = Router()
+
+@dialog_router.message(F.text, GPTDIalog.active_dialog)
+async def gpt_dialog(message: Message, gpt: GPT, storage):
+    answer_message = await message.answer('думает...')
+    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+    response = await gpt.dialog(message, load_prompt('gpt.txt'))
+    await answer_message.edit_text(response)
 
 @dialog_router.message(F.photo, ImageRecognition.ready_to_accept)
 async def handle_photo(message: Message, gpt: GPT):
@@ -21,6 +28,7 @@ async def handle_photo(message: Message, gpt: GPT):
 
     # Временная затычка пока нет ключа...
     answer_message = await message.answer('рассматривает фото...')
+    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     response = await gpt.ask_once(message, load_prompt('blind.txt'))
     await answer_message.edit_text(response)
 
@@ -34,9 +42,25 @@ async def handle_photo(message: Message, gpt: GPT):
     # response_text = await gpt.ask_gpt_vision(image_bytes)
     # await message.answer(response_text)
 
+@dialog_router.message(F.text, ImageRecognition.ready_to_accept)
+async def handle_photo(message: Message, gpt: GPT):
+    # Временная затычка пока нет ключа...
+    answer_message = await message.answer('рассматривает фото...')
+    response = await gpt.ask_once(message, load_prompt('blind.txt'))
+    await answer_message.edit_text(response)
+
 
 @dialog_router.message(F.text, RandomFacts.next_fact)
 async def random_fact(message: Message, gpt: GPT):
-    response = await gpt.ask_once(message, load_prompt('random_fact.txt'))
     answer_message = await message.answer('вспоминает...')
+    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+    response = await gpt.ask_once(message, load_prompt('random_fact.txt'))
+    await answer_message.edit_text(response)
+
+
+@dialog_router.message(F.text, Quiz.game)
+async def quiz(message: Message, gpt: GPT):
+    answer_message = await message.answer('внимание, вопрос...')
+    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+    response = await gpt.dialog(message, load_prompt('quiz.txt'))
     await answer_message.edit_text(response)
