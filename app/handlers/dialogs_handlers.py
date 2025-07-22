@@ -12,9 +12,8 @@ from utils.helpers import load_prompt
 dialog_router = Router()
 
 @dialog_router.message(F.text, GPTDIalog.active_dialog)
-async def gpt_dialog(message: Message, gpt: GPT, storage):
+async def gpt_dialog(message: Message, gpt: GPT):
     answer_message = await message.answer('думает...')
-    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     response = await gpt.dialog(message, load_prompt('gpt.txt'))
     await answer_message.edit_text(response)
 
@@ -28,7 +27,6 @@ async def handle_photo(message: Message, gpt: GPT):
 
     # Временная затычка пока нет ключа...
     answer_message = await message.answer('рассматривает фото...')
-    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     response = await gpt.ask_once(message, load_prompt('blind.txt'))
     await answer_message.edit_text(response)
 
@@ -53,7 +51,6 @@ async def handle_photo(message: Message, gpt: GPT):
 @dialog_router.message(F.text, RandomFacts.next_fact)
 async def random_fact(message: Message, gpt: GPT):
     answer_message = await message.answer('вспоминает...')
-    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     response = await gpt.ask_once(message, load_prompt('random_fact.txt'))
     await answer_message.edit_text(response)
 
@@ -61,6 +58,5 @@ async def random_fact(message: Message, gpt: GPT):
 @dialog_router.message(F.text, Quiz.game)
 async def quiz(message: Message, gpt: GPT):
     answer_message = await message.answer('внимание, вопрос...')
-    await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     response = await gpt.dialog(message, load_prompt('quiz.txt'))
     await answer_message.edit_text(response)

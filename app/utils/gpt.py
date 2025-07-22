@@ -5,6 +5,7 @@ import aiohttp
 import logging
 from typing import Optional, List, Dict
 
+from aiogram.enums import ChatAction
 from aiogram.types import Message
 from openai import OpenAI, RateLimitError, APIError, Timeout
 from storage.abstract_storage import AbstractStorage
@@ -71,6 +72,7 @@ class GPT:
             {"role": "user", "content": request_text}
         ]
 
+        await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
         response_text = await self._send_chat_completion(messages)
 
         # Обновление истории
@@ -88,7 +90,7 @@ class GPT:
             {"role": "system", "content": self.prompt + prompt},
             {"role": "user", "content": request_text}
         ]
-
+        await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
         return await self._send_chat_completion(messages)
 
     async def ask_gpt_vision(self, image_bytes: bytes, prompt: str = "Что изображено на этом фото?") -> str:
