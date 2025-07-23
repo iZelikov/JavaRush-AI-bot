@@ -1,5 +1,8 @@
+import re
 from pathlib import Path
 
+from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, FSInputFile
 
 from config import BASE_DIR
@@ -21,11 +24,43 @@ def load_sql(filename: str, fragment=0) -> str:
     sql_name = Path('sql', filename)
     return load_text(sql_name, fragment)
 
+
 def load_prompt(filename: str) -> str:
     prompt_name = Path('prompts', filename)
     return load_text(prompt_name)
+
 
 async def send_photo(message: Message, img_name: str):
     img_path = BASE_DIR / 'resources' / 'images' / img_name
     photo = FSInputFile(img_path)
     await message.answer_photo(photo=photo)
+
+
+async def safe_markdown_send(message: Message, text: str, reply_markup=None):
+    try:
+        return await message.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except TelegramBadRequest:
+        return await message.answer(text, parse_mode=None, reply_markup=reply_markup)
+
+
+async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
+    try:
+        return await message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except TelegramBadRequest:
+        return await message.edit_text(text, parse_mode=None, reply_markup=reply_markup)
+
+
+def escape_markdown_v2(text: str) -> str:
+    """
+    Экранирует спецсимволы для Telegram MarkdownV2
+    """
+    escape_chars = r"_*[\]()~`>#+-=|{}.!\\"
+    return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)
+
+
+async def safe_markdown_v2_send(message: Message, text: str):
+    try:
+        escaped = escape_markdown_v2(text)
+        return await message.answer(escaped, parse_mode=ParseMode.MARKDOWN_V2)
+    except TelegramBadRequest:
+        return await message.answer(text)

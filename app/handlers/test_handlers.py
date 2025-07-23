@@ -28,7 +28,7 @@ async def cmd_test(message: Message, storage: AbstractStorage):
         "role": "assistant",
         "content": f"{user_id} - {datetime.now().strftime('%H:%M:%S')}: {state}"})
     await storage.save_history(user_id, history)
-    await message.answer("\n".join(map(str, history)))
+    await message.answer("\n".join(map(str, history)), parse_mode=None)
 
 @test_router.message(Command('test_clear'))
 async def cmd_clear(message: Message, storage:AbstractStorage):

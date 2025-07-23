@@ -20,7 +20,7 @@ class GPT:
         self.client = OpenAI(api_key=gpt_key, base_url=base_url)
         self.storage = db
         self.prompt = load_prompt('base_prompt.txt')
-        self.model = os.getenv('GPT_MODEL') or 'gpt-4o'
+        self.model = os.getenv('GPT_MODEL') or 'deepseek-r1-0528:free'
         self.max_tokens = 3000
         self.temperature = 0.8
 
@@ -46,7 +46,7 @@ class GPT:
 
         except RateLimitError:
             logger.warning("Rate limit exceeded")
-            return 'Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди чутка.'
+            return 'Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди чутка... Максимум до завтра.'
 
         except Timeout:
             logger.error("GPT API timeout")
@@ -60,9 +60,9 @@ class GPT:
             logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
             return 'Произошла неведомая фигня... GPT ушёл в отказ.'
 
-    async def dialog(self, message: Message, prompt: str = "") -> str:
+    async def dialog(self, message: Message, prompt: str = "", text="") -> str:
         user_id = message.from_user.id
-        request_text = message.text or message.caption or ""
+        request_text = message.text or message.caption or text
 
         history = await self.storage.get_history(user_id)
 
@@ -83,8 +83,8 @@ class GPT:
         await self.storage.save_history(user_id, history)
         return response_text
 
-    async def ask_once(self, message: Message, prompt: str = "") -> str:
-        request_text = message.text or message.caption or ""
+    async def ask_once(self, message: Message, prompt: str = "", text="") -> str:
+        request_text = message.text or message.caption or text
 
         messages = [
             {"role": "system", "content": self.prompt + prompt},

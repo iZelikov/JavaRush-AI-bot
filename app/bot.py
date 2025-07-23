@@ -26,7 +26,7 @@ async def main() -> None:
     gpt = GPT(GPT_TOKEN, storage, GPT_BASE_URL)
     dp = Dispatcher(storage=storage)
     dp.update.middleware(InjectorMiddleware(gpt=gpt, storage=storage))
-    dp.update.middleware(TypingMiddleware(interval=2.5))
+    dp.update.middleware(TypingMiddleware())
 
     if ENV == 'dev':
         dp.include_routers(test_router)
@@ -42,7 +42,6 @@ async def main() -> None:
     await bot.delete_webhook(drop_pending_updates=True)
 
     print('Бот запущен')
-    # raise Exception('Разберись, с Dependency Injection хранилищ!')
     await dp.start_polling(bot)
 
 

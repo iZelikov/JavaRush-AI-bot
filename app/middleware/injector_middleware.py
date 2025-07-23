@@ -4,7 +4,6 @@ from aiogram.types import TelegramObject
 
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
-from storage.factory import get_storage
 
 class InjectorMiddleware(BaseMiddleware):
     def __init__(self, gpt: GPT, storage: AbstractStorage):

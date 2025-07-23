@@ -1,5 +1,8 @@
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-from aiogram.types import BotCommand
+from gc import callbacks
+
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 from utils.helpers import load_text
 
 def set_commands():
@@ -19,3 +22,15 @@ def main_kb():
         resize_keyboard=True,
         one_time_keyboard=True)
     return keyboard
+
+def random_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text="Ещё один факт",
+        callback_data="next_fact")
+    )
+    builder.add(InlineKeyboardButton(
+        text="Хватит",
+        callback_data="cancel_and_restart"
+    ))
+    return builder.as_markup()
