@@ -10,7 +10,7 @@ from aiogram.types import Message
 from openai import OpenAI, RateLimitError, APIError, Timeout
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_prompt
-from config import API_VISION_TOKEN
+from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -24,25 +24,32 @@ class GPT:
         self.max_tokens = 3000
         self.temperature = 0.8
 
+    def _clear_think(self, text: str) -> str:
+        return text.split('</think>')[-1].strip()
+
     async def _send_chat_completion(
             self,
             messages: List[Dict],
             model: Optional[str] = None,
             max_tokens: Optional[int] = None,
             temperature: Optional[float] = None,
+            client=None
     ) -> str:
         model = model or self.model
         max_tokens = max_tokens or self.max_tokens
         temperature = temperature if temperature is not None else self.temperature
+        client = client if client is not None else self.client
 
         try:
-            response = self.client.chat.completions.create(
+            response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature
             )
-            return response.choices[0].message.content.strip()
+            answer_text = response.choices[0].message.content.strip()
+            return self._clear_think(answer_text)
+
 
         except RateLimitError:
             logger.warning("Rate limit exceeded")
@@ -62,7 +69,7 @@ class GPT:
 
     async def dialog(self, message: Message, prompt: str = "", text="") -> str:
         user_id = message.from_user.id
-        request_text = message.text or message.caption or text
+        request_text = text or message.text or message.caption or ""
 
         history = await self.storage.get_history(user_id)
 
@@ -73,7 +80,7 @@ class GPT:
         ]
 
         await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
-        response_text = await self._send_chat_completion(messages)
+        response_text = await self._send_chat_completion(messages=messages)
 
         # Обновление истории
         history += [
@@ -84,58 +91,31 @@ class GPT:
         return response_text
 
     async def ask_once(self, message: Message, prompt: str = "", text="") -> str:
-        request_text = message.text or message.caption or text
+        request_text = text or message.text or message.caption or ""
 
         messages = [
             {"role": "system", "content": self.prompt + prompt},
             {"role": "user", "content": request_text}
         ]
         await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
-        return await self._send_chat_completion(messages)
+        return await self._send_chat_completion(messages=messages)
 
-    async def ask_gpt_vision(self, image_bytes: bytes, prompt: str = "Что изображено на этом фото?") -> str:
-        base64_image = base64.b64encode(image_bytes).decode("utf-8")
+    async def ask_image(self, img_url, prompt: str = "Опиши всё что видишь на картинке"):
 
-        headers = {
-            "Authorization": f"Bearer {API_VISION_TOKEN}",
-            "Content-Type": "application/json",
-        }
-
-        payload = {
-            "model": "gpt-4-vision-preview",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        },
-                    ],
-                }
-            ],
-            "max_tokens": 1000
-        }
-
-        try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20)) as session:
-                async with session.post("https://api.openai.com/v1/chat/completions", headers=headers,
-                                        json=payload) as resp:
-                    data = await resp.json()
-                    logger.debug("GPT VISION RESPONSE: %s", data)
-
-                    if "choices" not in data:
-                        raise ValueError(f"OpenAI ответ не содержит 'choices': {data}")
-
-                    return data["choices"][0]["message"]["content"].strip()
-
-        except aiohttp.ClientError as e:
-            logger.exception("Ошибка при запросе GPT Vision")
-            return "GPT Vision зазнался и не отвечает. Может у тя инет барахлит или токен не такой?."
-
-        except Exception as e:
-            logger.exception("Непредвиденная ошибка GPT Vision")
-            return "Картинка битая пришла или ещё какая фигня приключилась. Скинь другую!"
+        client = OpenAI(api_key=CHAT_GPT_TOKEN, base_url=CHAT_GPT_BASE_URL)
+        model = CHAT_GPT_MODEL or "gpt-4-turbo"
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": f"{prompt}"},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"{img_url}"
+                        }
+                    }
+                ]
+            }
+        ]
+        return await  self._send_chat_completion(messages=messages, model=model, client=client)

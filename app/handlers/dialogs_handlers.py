@@ -42,22 +42,12 @@ async def handle_photo(message: Message, gpt: GPT):
     file = await message.bot.get_file(photo.file_id)
     file_path = file.file_path
 
-    file_url = f"https://api.telegram.org/file/bot{message.bot.id}/{file_path}"
-
-    # Временная затычка пока нет ключа для обработки фото...
+    file_url = f"https://api.telegram.org/file/bot{message.bot.token}/{file_path}"
     answer_message = await message.answer('Рассматривает фото...')
-    response = await gpt.ask_once(message, load_prompt('blind.txt'))
-    await safe_markdown_edit(answer_message, response)
-
-    # Скачиваем фото
-    # async with aiohttp.ClientSession() as session:
-    #     async with session.get(file_url) as resp:
-    #         image_bytes = await resp.read()
-
-    # Отправляем в OpenAI GPT-4-Vision (пока нет ключа :(
-    # await message.answer('Фото обрабатывается')
-    # response_text = await gpt.ask_gpt_vision(image_bytes)
-    # await message.answer(response_text)
+    img_response = await gpt.ask_image(file_url, prompt=load_prompt("image_recognition.txt"))
+    await answer_message.edit_text('Думает, чего бы умного сказать...')
+    text_response = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response)
+    await answer_message.edit_text(text_response)
 
 
 @dialog_router.message(F.text, ImageRecognition.ready_to_accept)
