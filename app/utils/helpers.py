@@ -64,3 +64,39 @@ async def safe_markdown_v2_send(message: Message, text: str):
         return await message.answer(escaped, parse_mode=ParseMode.MARKDOWN_V2)
     except TelegramBadRequest:
         return await message.answer(text)
+
+
+def extract_urls(message: Message) -> list:
+    urls = []
+    text = message.text or message.caption
+    if message.entities:
+        for entity in message.entities:
+            if entity.type == "url":
+                url = text[entity.offset: entity.offset + entity.length]
+                urls.append(url)
+
+            elif entity.type == "text_link":
+                urls.append(entity.url)
+
+    if not urls:
+        url_pattern = r'https?://[^\s]+'
+        urls = re.findall(url_pattern, text)
+
+    return urls
+
+
+def extract_image_urls(message: Message):
+    IMAGE_EXTENSIONS = {
+        '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff', '.heic'
+    }
+    IMAGE_URL_PATTERNS = {'/image/', '/img/', '/media/'}
+    urls = extract_urls(message)
+    image_urls = []
+    for url in urls:
+        lower_url = str(url).lower()
+        if any(ext in lower_url for ext in IMAGE_EXTENSIONS):
+            image_urls.append(url)
+        elif  any(pattern in lower_url for pattern in IMAGE_URL_PATTERNS):
+            image_urls.append(url)
+    return image_urls
+

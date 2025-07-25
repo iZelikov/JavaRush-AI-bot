@@ -7,7 +7,7 @@ from typing import Optional, List, Dict
 
 from aiogram.enums import ChatAction
 from aiogram.types import Message
-from openai import OpenAI, RateLimitError, APIError, Timeout
+from openai import OpenAI, RateLimitError, APIError, Timeout, APITimeoutError
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_prompt
 from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
@@ -53,19 +53,19 @@ class GPT:
 
         except RateLimitError:
             logger.warning("Rate limit exceeded")
-            return 'Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди чутка... Максимум до завтра.'
+            return 'ERROR: Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди чутка... Максимум до завтра.'
 
-        except Timeout:
+        except APITimeoutError:
             logger.error("GPT API timeout")
-            return 'GPT молчит как рыба об лёд. Попробуй позже.'
+            return 'ERROR: GPT молчит как рыба об лёд. Попробуй позже.'
 
         except APIError as e:
             logger.error(f"OpenAI API Error: {e}")
-            return 'Электронный болван говорит, что у тебя GPT API не такой как у него.'
+            return 'ERROR: Электронный болван говорит, что у тебя GPT API не такой как у него.'
 
         except Exception as e:
             logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
-            return 'Произошла неведомая фигня... GPT ушёл в отказ.'
+            return 'ERROR: Произошла неведомая фигня... GPT ушёл в отказ.'
 
     async def dialog(self, message: Message, prompt: str = "", text="") -> str:
         user_id = message.from_user.id
@@ -118,4 +118,4 @@ class GPT:
                 ]
             }
         ]
-        return await  self._send_chat_completion(messages=messages, model=model, client=client)
+        return await self._send_chat_completion(messages=messages, model=model, client=client)
