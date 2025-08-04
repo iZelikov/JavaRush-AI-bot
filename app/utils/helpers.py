@@ -1,23 +1,25 @@
+import hashlib
 import re
 from pathlib import Path
 
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, FSInputFile, BufferedInputFile
+from aiogram.utils.mypy_hacks import lru_cache
 
 from config import BASE_DIR
 from random import choice
 
 
+@lru_cache(maxsize=256)
+def load_text(filename: str | Path, fragment=0) -> str:
+    text_filename = BASE_DIR / 'resources' / 'texts' / filename
+    return text_filename.read_text(encoding='utf-8').split('\n\n')[fragment]
+
+
 def rnd_text() -> str:
     texts = load_text('gopota.txt').split('\n\n')
     return choice(texts)
-
-
-def load_text(filename: str | Path, fragment=0) -> str:
-    text_filename = BASE_DIR / 'resources' / 'texts' / filename
-    with open(text_filename, 'r', encoding='utf8') as text_file:
-        return text_file.read().split('\n\n')[fragment]
 
 
 def load_sql(filename: str, fragment=0) -> str:
@@ -29,11 +31,28 @@ def load_prompt(filename: str) -> str:
     prompt_name = Path('prompts', filename)
     return load_text(prompt_name)
 
+@lru_cache(maxsize=64)
+def get_cached_photo(img_name:str) -> BufferedInputFile:
+    img_path = BASE_DIR / 'resources' / 'images' / img_name
+    if not img_path.exists():
+        raise FileNotFoundError(f'Image {img_name} not found')
+    img_bytes = img_path.read_bytes()
+    file_hash = hashlib.md5(img_bytes).hexdigest()[:8]
+    file_name = f"{img_path.stem}_{file_hash}{img_path.suffix}"
+    print(f'Load photo {img_path}')
+    return BufferedInputFile(img_bytes, filename=file_name)
 
 async def send_photo(message: Message, img_name: str):
-    img_path = BASE_DIR / 'resources' / 'images' / img_name
-    photo = FSInputFile(img_path)
-    await message.answer_photo(photo=photo)
+    # img_path = BASE_DIR / 'resources' / 'images' / img_name
+    # photo = FSInputFile(img_path)
+    try:
+        photo = get_cached_photo(img_name)
+        await message.answer_photo(photo=photo)
+    except FileNotFoundError:
+        await message.answer('⚠️ Братан, кажись тут была картинка, но я её потерял...')
+    except Exception:
+        await message.answer('⚠️ Крепись братан, происходит неведомая фигня!')
+
 
 
 async def safe_markdown_send(message: Message, text: str, reply_markup=None):
@@ -96,7 +115,6 @@ def extract_image_urls(message: Message):
         lower_url = str(url).lower()
         if any(ext in lower_url for ext in IMAGE_EXTENSIONS):
             image_urls.append(url)
-        elif  any(pattern in lower_url for pattern in IMAGE_URL_PATTERNS):
+        elif any(pattern in lower_url for pattern in IMAGE_URL_PATTERNS):
             image_urls.append(url)
     return image_urls
-

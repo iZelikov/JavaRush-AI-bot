@@ -81,7 +81,7 @@ async def recognize_photo(file_url: str, message: Message, gpt: GPT):
     img_response = await gpt.ask_image(file_url, prompt=load_prompt("image_recognition.txt"))
     if img_response.startswith('ERROR'):
         await answer_message.edit_text(
-            "Извини, братан! Фото совсем не грузится. Может санкции, а может происки Масонов с Тамплиерами. Короче, давай другое.")
+            "Извини, братан! Фото конкретно не грузится. Может санкции, а может происки Масонов с Рептилоидами. Короче, давай другое.")
     else:
         await answer_message.edit_text('Думает, чего бы умного сказать...')
         text_response = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response)
