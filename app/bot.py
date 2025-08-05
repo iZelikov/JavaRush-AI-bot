@@ -14,6 +14,7 @@ from middleware.typing_middleware import TypingMiddleware
 from storage.factory import get_storage
 from utils.gpt import GPT
 from keyboards.all_kbs import set_commands
+from utils.misc import on_start, on_shutdown
 
 
 async def main() -> None:
@@ -41,9 +42,13 @@ async def main() -> None:
 
     await bot.delete_webhook(drop_pending_updates=True)
 
-    print('Бот запущен')
+    dp.startup.register(on_start)
+    dp.shutdown.register(on_shutdown)
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Бот остановлен Администратором")
