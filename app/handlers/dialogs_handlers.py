@@ -1,10 +1,10 @@
 import asyncio
 
 from aiogram import Router, F
-import aiohttp
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
+from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
 from keyboards.all_kbs import random_kb
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz
 from storage.abstract_storage import AbstractStorage
@@ -32,7 +32,6 @@ async def cancel_dialog(callback: CallbackQuery, gpt: GPT, state: FSMContext, st
 async def gpt_dialog(message: Message, gpt: GPT):
     answer_message = await message.answer('Думает...')
     response = await gpt.dialog(message, load_prompt('gpt.txt'))
-    # await safe_markdown_edit(answer_message, response)
     await safe_markdown_edit(answer_message, response)
 
 
@@ -78,7 +77,13 @@ async def quiz(message: Message, gpt: GPT):
 
 async def recognize_photo(file_url: str, message: Message, gpt: GPT):
     answer_message = await message.answer('Рассматривает фото...')
-    img_response = await gpt.ask_image(file_url, prompt=load_prompt("image_recognition.txt"))
+    img_response = await gpt.ask_image(
+        file_url,
+        prompt=load_prompt("image_recognition.txt"),
+        token=CHAT_GPT_TOKEN,
+        base_url=CHAT_GPT_BASE_URL,
+        model=CHAT_GPT_MODEL
+    )
     if img_response.startswith('ERROR'):
         await answer_message.edit_text(
             "Извини, братан! Фото конкретно не грузится. Может санкции, а может происки Масонов с Рептилоидами. Короче, давай другое.")

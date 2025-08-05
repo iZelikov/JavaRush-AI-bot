@@ -1,16 +1,15 @@
-import base64
+import asyncio
 import os
-
-import aiohttp
 import logging
 from typing import Optional, List, Dict
 
 from aiogram.enums import ChatAction
 from aiogram.types import Message
-from openai import OpenAI, RateLimitError, APIError, Timeout, APITimeoutError
+from openai import OpenAI, RateLimitError, APIError, APITimeoutError, Stream
+from openai.types.chat import ChatCompletionUserMessageParam
+
 from storage.abstract_storage import AbstractStorage
 from utils.helpers import load_prompt
-from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +17,8 @@ logger = logging.getLogger(__name__)
 class GPT:
     def __init__(self, gpt_key: str, db: AbstractStorage, base_url: Optional[str] = None):
         self.client = OpenAI(api_key=gpt_key, base_url=base_url)
+        self.token = gpt_key
+        self.base_url = base_url
         self.storage = db
         self.prompt = load_prompt('base_prompt.txt')
         self.model = os.getenv('GPT_MODEL') or 'deepseek-r1-0528:free'
@@ -29,27 +30,38 @@ class GPT:
 
     async def _send_chat_completion(
             self,
-            messages: List[Dict],
+            messages: List[Dict] | ChatCompletionUserMessageParam,
             model: Optional[str] = None,
             max_tokens: Optional[int] = None,
             temperature: Optional[float] = None,
-            client=None
-    ) -> str:
+            client=None,
+            stream=False
+    ) -> str | Stream:
         model = model or self.model
         max_tokens = max_tokens or self.max_tokens
         temperature = temperature if temperature is not None else self.temperature
         client = client if client is not None else self.client
 
         try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-            answer_text = response.choices[0].message.content.strip()
-            return self._clear_think(answer_text)
+            if not stream:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+                answer_text = response.choices[0].message.content.strip()
+                return self._clear_think(answer_text)
+            else:
+                response_stream = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    stream=True
+                )
 
+                return response_stream
 
         except RateLimitError:
             logger.warning("Rate limit exceeded")
@@ -66,6 +78,42 @@ class GPT:
         except Exception as e:
             logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
             return 'ERROR: Произошла неведомая фигня... GPT ушёл в отказ.'
+
+    async def _handle_stream(self, stream: Stream, message: Message) -> str:
+        temp_msg = await message.answer('Щас всё будет... ')
+        buffer = []
+        last_update = asyncio.get_event_loop().time()
+        update_interval = 0.5
+
+        for chunk in stream:
+            part = chunk.choices[0].delta.content
+            if part:
+                buffer.append(part)
+            current_time = asyncio.get_event_loop().time()
+            if current_time - last_update >= update_interval and buffer:
+                temp_msg = await self._send_part(temp_msg, buffer)
+                last_update = current_time
+                buffer = []
+
+        if buffer:
+            temp_msg = await self._send_part(temp_msg, buffer)
+
+        full_text = temp_msg.text
+        await temp_msg.delete()
+        return full_text
+
+    async def _send_part(self, message: Message, buffer: list[str]) -> Message:
+        new_part = ''.join(buffer).strip()
+        if not new_part:
+            return message
+
+        new_text = message.text + new_part
+
+        try:
+            return await message.edit_text(new_text, parse_mode=None)
+        except Exception as e:
+            print(f"Ошибка при редактировании сообщения: {e}")
+            return message
 
     async def dialog(self, message: Message, prompt: str = "", text="") -> str:
         user_id = message.from_user.id
@@ -98,12 +146,16 @@ class GPT:
             {"role": "user", "content": request_text}
         ]
         await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
-        return await self._send_chat_completion(messages=messages)
+        response_stream = await self._send_chat_completion(messages=messages, stream=True)
+        answer_text = await self._handle_stream(response_stream, message)
+        return answer_text
 
-    async def ask_image(self, img_url, prompt: str = "Опиши всё что видишь на картинке"):
-
-        client = OpenAI(api_key=CHAT_GPT_TOKEN, base_url=CHAT_GPT_BASE_URL)
-        model = CHAT_GPT_MODEL or "gpt-4-turbo"
+    async def ask_image(self, img_url, prompt: str = "Опиши всё что видишь на картинке", token: str = None,
+                        base_url: str = None, model=None):
+        token = token or self.token
+        base_url = base_url or self.base_url
+        model = model or "gpt-4-turbo"
+        client = OpenAI(api_key=token, base_url=base_url)
         messages = [
             {
                 "role": "user",

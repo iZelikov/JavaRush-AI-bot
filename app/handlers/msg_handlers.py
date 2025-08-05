@@ -1,5 +1,4 @@
 from aiogram import Router, F
-from aiogram.enums import ChatAction
 from aiogram.types import Message
 
 from utils.gpt import GPT
