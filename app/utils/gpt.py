@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Union
 
 from aiogram.enums import ChatAction
 from aiogram.types import Message
-from openai import OpenAI, RateLimitError, APIError, APITimeoutError, Stream, AsyncOpenAI, AsyncStream
+from openai import RateLimitError, APIError, APITimeoutError, AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
 from storage.abstract_storage import AbstractStorage
@@ -79,27 +79,36 @@ class GPT:
             logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
             return 'ERROR: Произошла неведомая фигня... GPT ушёл в отказ.'
 
-    async def _handle_stream(self, stream: AsyncStream[ChatCompletionChunk], message: Message) -> str:
-        temp_msg = await message.answer('...')
+    async def _handle_stream(self,
+                             stream: AsyncStream[ChatCompletionChunk],
+                             bot_message: Message = None) -> str:
         buffer = []
-        last_update = asyncio.get_event_loop().time()
-        update_interval = 0.5
+        if bot_message:
+            bot_message = await bot_message.edit_text('...')
+            last_update = asyncio.get_event_loop().time()
+            update_interval = 0.5
 
-        async for chunk in stream:
-            part = chunk.choices[0].delta.content
-            if part:
-                buffer.append(part)
-            current_time = asyncio.get_event_loop().time()
-            if current_time - last_update >= update_interval and buffer:
-                temp_msg = await self._send_part(temp_msg, buffer)
-                last_update = current_time
-                buffer = []
+            async for chunk in stream:
+                part = chunk.choices[0].delta.content
+                if part:
+                    buffer.append(part)
+                current_time = asyncio.get_event_loop().time()
+                if current_time - last_update >= update_interval and buffer:
+                    bot_message = await self._send_part(bot_message, buffer)
+                    last_update = current_time
+                    buffer = []
 
-        if buffer:
-            temp_msg = await self._send_part(temp_msg, buffer)
+            if buffer:
+                bot_message = await self._send_part(bot_message, buffer)
 
-        full_text = temp_msg.text.lstrip('.')
-        await temp_msg.delete()
+            full_text = bot_message.text.lstrip('.')
+        else:
+            async for chunk in stream:
+                part = chunk.choices[0].delta.content
+                if part:
+                    buffer.append(part)
+            full_text = ''.join(buffer)
+
         return full_text
 
     async def _send_part(self, message: Message, buffer: list[str]) -> Message:
@@ -117,18 +126,22 @@ class GPT:
 
     async def _get_text_from_stream(self,
                                     messages: list[dict],
-                                    message: Message):
+                                    bot_message: Message = None):
         response_stream = await self._send_chat_completion(messages=messages, stream=True)
 
         if isinstance(response_stream, str):
             return response_stream
 
-        response_text = await self._handle_stream(response_stream, message)
+        response_text = await self._handle_stream(response_stream, bot_message)
         return response_text
 
-    async def dialog(self, message: Message, prompt: str = "", text="") -> str:
-        user_id = message.from_user.id
-        request_text = text or message.text or message.caption or ""
+    async def dialog(self,
+                     user_message: Message,
+                     prompt: str = "",
+                     text: str = "",
+                     bot_message: Message = None) -> str:
+        user_id = user_message.from_user.id
+        request_text = text or user_message.text or user_message.caption or ""
 
         history = await self.storage.get_history(user_id)
 
@@ -138,9 +151,9 @@ class GPT:
             {"role": "user", "content": request_text}
         ]
 
-        await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+        await user_message.bot.send_chat_action(chat_id=user_message.chat.id, action=ChatAction.TYPING)
 
-        response_text = await self._get_text_from_stream(messages, message)
+        response_text = await self._get_text_from_stream(messages, bot_message)
 
         history += [
             {"role": "user", "content": request_text},
@@ -149,16 +162,20 @@ class GPT:
         await self.storage.save_history(user_id, history)
         return response_text
 
-    async def ask_once(self, message: Message, prompt: str = "", text="") -> str:
-        request_text = text or message.text or message.caption or ""
+    async def ask_once(self,
+                       user_message: Message,
+                       prompt: str = "",
+                       text: str = "",
+                       bot_message: Message = None) -> str:
+        request_text = text or user_message.text or user_message.caption or ""
 
         messages = [
             {"role": "system", "content": self.prompt + prompt},
             {"role": "user", "content": request_text}
         ]
-        await message.bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+        await user_message.bot.send_chat_action(chat_id=user_message.chat.id, action=ChatAction.TYPING)
 
-        response_text = await self._get_text_from_stream(messages, message)
+        response_text = await self._get_text_from_stream(messages, bot_message)
 
         return response_text
 
@@ -193,4 +210,3 @@ class GPT:
             stream=False
         )
         return response
-

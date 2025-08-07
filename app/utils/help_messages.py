@@ -98,7 +98,10 @@ async def recognize_photo(file_url: str, message: Message, gpt: GPT):
         await answer_message.edit_text(
             "Извини, братан! Фото конкретно не грузится. Может санкции, а может происки Масонов с Рептилоидами. Короче, давай другое.")
     else:
-        print(img_response_text)
         await answer_message.edit_text('Думает, чего бы умного сказать...')
-        response_text = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response_text)
+        response_text = await gpt.ask_once(
+            message,
+            prompt=load_prompt("blind.txt"),
+            text=img_response_text,
+            bot_message=answer_message)
         await safe_markdown_edit(answer_message, response_text)

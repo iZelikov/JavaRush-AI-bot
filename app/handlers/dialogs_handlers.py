@@ -20,8 +20,11 @@ async def cancel_dialog(callback: CallbackQuery, gpt: GPT, state: FSMContext, st
     await callback.answer()
     await send_photo(callback.message, 'chat-gopota.jpg')
     answer_message = await callback.message.answer('Подыскивает прощальные слова...')
-    response = await gpt.ask_once(callback.message, load_prompt('cancel.txt'), text="На сегодня хватит, мне пора идти")
-    await safe_markdown_edit(answer_message, response)
+    response_text = await gpt.ask_once(
+        callback.message,
+        load_prompt('cancel.txt'), text="На сегодня хватит, мне пора идти",
+        bot_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)
     help_text = load_text('help.txt')
     await  callback.message.answer(help_text)
 
@@ -29,9 +32,11 @@ async def cancel_dialog(callback: CallbackQuery, gpt: GPT, state: FSMContext, st
 @dialog_router.message(F.text, GPTDIalog.active_dialog)
 async def gpt_dialog(message: Message, gpt: GPT):
     answer_message = await message.answer('Думает...')
-    response = await gpt.dialog(message, load_prompt('gpt.txt'))
-    await safe_markdown_edit(answer_message, response)
-
+    response_text = await gpt.dialog(
+        message,
+        load_prompt('gpt.txt'),
+        bot_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)
 
 
 @dialog_router.message(F.photo, ImageRecognition.ready_to_accept)
@@ -54,7 +59,10 @@ async def handle_photo(message: Message, gpt: GPT):
 @dialog_router.message(F.text, RandomFacts.next_fact)
 async def random_fact(message: Message, gpt: GPT):
     answer_message = await message.answer('Вспоминает...')
-    response = await gpt.dialog(message, load_prompt('random_fact.txt'))
+    response = await gpt.dialog(
+        message,
+        load_prompt('random_fact.txt'),
+        bot_message=answer_message)
     await safe_markdown_edit(answer_message, response, reply_markup=random_kb())
 
 
@@ -63,14 +71,19 @@ async def random_fact(callback: CallbackQuery, gpt: GPT):
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.answer()
     answer_message = await callback.message.answer('Вспоминает...')
-    response = await gpt.dialog(callback.message, load_prompt('random_fact.txt'), text="Расскажи новый интересный факт")
+    response = await gpt.dialog(
+        callback.message,
+        load_prompt('random_fact.txt'),
+        text="Расскажи новый интересный факт",
+        bot_message=answer_message)
     await safe_markdown_edit(answer_message, response, reply_markup=random_kb())
 
 
 @dialog_router.message(F.text, Quiz.game)
 async def quiz(message: Message, gpt: GPT):
     answer_message = await message.answer('Генерирует вопрос...')
-    response = await gpt.dialog(message, load_prompt('quiz.txt'))
+    response = await gpt.dialog(
+        message,
+        load_prompt('quiz.txt'),
+        bot_message=answer_message)
     await safe_markdown_edit(answer_message, response)
-
-
