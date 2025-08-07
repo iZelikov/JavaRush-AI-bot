@@ -33,6 +33,7 @@ async def gpt_dialog(message: Message, gpt: GPT):
     await safe_markdown_edit(answer_message, response)
 
 
+
 @dialog_router.message(F.photo, ImageRecognition.ready_to_accept)
 async def handle_photo(message: Message, gpt: GPT):
     photo = message.photo[-1]

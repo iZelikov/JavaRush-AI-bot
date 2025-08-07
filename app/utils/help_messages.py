@@ -63,7 +63,7 @@ def extract_image_urls(message: Message):
     IMAGE_EXTENSIONS = {
         '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff', '.heic'
     }
-    IMAGE_URL_PATTERNS = {'image', 'img', 'media'}
+    IMAGE_URL_PATTERNS = {'image', 'img', 'media', 'avatar'}
     urls = extract_urls(message)
     image_urls = []
     for url in urls:
@@ -87,17 +87,18 @@ async def send_photo(message: Message, img_name: str):
 
 async def recognize_photo(file_url: str, message: Message, gpt: GPT):
     answer_message = await message.answer('Рассматривает фото...')
-    img_response = await gpt.ask_image(
+    img_response_text = await gpt.ask_image(
         file_url,
         prompt=load_prompt("image_recognition.txt"),
         token=CHAT_GPT_TOKEN,
         base_url=CHAT_GPT_BASE_URL,
         model=CHAT_GPT_MODEL
     )
-    if img_response.startswith('ERROR'):
+    if img_response_text.startswith('ERROR'):
         await answer_message.edit_text(
             "Извини, братан! Фото конкретно не грузится. Может санкции, а может происки Масонов с Рептилоидами. Короче, давай другое.")
     else:
+        print(img_response_text)
         await answer_message.edit_text('Думает, чего бы умного сказать...')
-        response_text = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response)
+        response_text = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response_text)
         await safe_markdown_edit(answer_message, response_text)
