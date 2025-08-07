@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message
 
 from utils.gpt import GPT
-from utils.helpers import load_prompt
+from utils.help_load_res import load_prompt
 
 msg_router = Router()
 

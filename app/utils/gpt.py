@@ -9,7 +9,7 @@ from openai import OpenAI, RateLimitError, APIError, APITimeoutError, Stream, As
 from openai.types.chat import ChatCompletionChunk
 
 from storage.abstract_storage import AbstractStorage
-from utils.helpers import load_prompt
+from utils.help_load_res import load_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +98,9 @@ class GPT:
         if buffer:
             temp_msg = await self._send_part(temp_msg, buffer)
 
-        full_text = temp_msg.text
+        full_text = temp_msg.text.lstrip('.')
         await temp_msg.delete()
-        return full_text.lstrip('.')
+        return full_text
 
     async def _send_part(self, message: Message, buffer: list[str]) -> Message:
         new_part = ''.join(buffer)

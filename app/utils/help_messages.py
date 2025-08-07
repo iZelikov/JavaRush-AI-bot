@@ -1,62 +1,16 @@
-import hashlib
 import re
-from pathlib import Path
 
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message, FSInputFile, BufferedInputFile
-from aiogram.utils.mypy_hacks import lru_cache
+from aiogram.types import Message
 
-from config import BASE_DIR
-from random import choice
+from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
+from utils.gpt import GPT
 
-
-@lru_cache(maxsize=256)
-def load_text(filename: str | Path, fragment: int | None =0) -> str:
-    text_filename = BASE_DIR / 'resources' / 'texts' / filename
-    if fragment is None:
-        return text_filename.read_text(encoding='utf-8')
-    else:
-        return text_filename.read_text(encoding='utf-8').split('\n\n')[fragment]
+from utils.help_load_res import get_cached_photo, load_prompt
 
 
-def rnd_text() -> str:
-    texts = load_text('random_gopota.txt', fragment=None).split('\n\n')
-    return choice(texts)
-
-
-def load_sql(filename: str, fragment=0) -> str:
-    sql_name = Path('sql', filename)
-    return load_text(sql_name, fragment)
-
-
-def load_prompt(filename: str) -> str:
-    prompt_name = Path('prompts', filename)
-    return load_text(prompt_name)
-
-
-@lru_cache(maxsize=64)
-def get_cached_photo(img_name: str) -> BufferedInputFile:
-    img_path = BASE_DIR / 'resources' / 'images' / img_name
-    if not img_path.exists():
-        raise FileNotFoundError(f'Image {img_name} not found')
-    img_bytes = img_path.read_bytes()
-    file_hash = hashlib.md5(img_bytes).hexdigest()[:8]
-    file_name = f"{img_path.stem}_{file_hash}{img_path.suffix}"
-    return BufferedInputFile(img_bytes, filename=file_name)
-
-
-async def send_photo(message: Message, img_name: str):
-    try:
-        photo = get_cached_photo(img_name)
-        await message.answer_photo(photo=photo)
-    except FileNotFoundError:
-        await message.answer('ERROR: Братан, кажись тут была картинка, но я её потерял...')
-    except Exception:
-        await message.answer('ERROR: Крепись братан, происходит неведомая фигня!')
-
-
-async def safe_markdown_send(message: Message, text: str, reply_markup=None):
+async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
     try:
         return await message.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
     except TelegramBadRequest:
@@ -119,3 +73,31 @@ def extract_image_urls(message: Message):
         elif any(pattern in lower_url for pattern in IMAGE_URL_PATTERNS):
             image_urls.append(url)
     return image_urls
+
+
+async def send_photo(message: Message, img_name: str):
+    try:
+        photo = get_cached_photo(img_name)
+        await message.answer_photo(photo=photo)
+    except FileNotFoundError:
+        await message.answer('ERROR: Братан, кажись тут была картинка, но я её потерял...')
+    except Exception:
+        await message.answer('ERROR: Крепись братан, происходит неведомая фигня!')
+
+
+async def recognize_photo(file_url: str, message: Message, gpt: GPT):
+    answer_message = await message.answer('Рассматривает фото...')
+    img_response = await gpt.ask_image(
+        file_url,
+        prompt=load_prompt("image_recognition.txt"),
+        token=CHAT_GPT_TOKEN,
+        base_url=CHAT_GPT_BASE_URL,
+        model=CHAT_GPT_MODEL
+    )
+    if img_response.startswith('ERROR'):
+        await answer_message.edit_text(
+            "Извини, братан! Фото конкретно не грузится. Может санкции, а может происки Масонов с Рептилоидами. Короче, давай другое.")
+    else:
+        await answer_message.edit_text('Думает, чего бы умного сказать...')
+        response_text = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response)
+        await safe_markdown_edit(answer_message, response_text)

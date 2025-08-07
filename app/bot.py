@@ -4,9 +4,8 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import BotCommandScopeDefault, MenuButtonCommands
 
-from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL, ENV
+from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL
 from handlers import main_router
-from handlers.test_handlers import test_router
 from middleware.injector_middleware import InjectorMiddleware
 from middleware.typing_middleware import TypingMiddleware
 from storage.factory import get_storage

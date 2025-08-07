@@ -3,7 +3,8 @@ from gc import callbacks
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from utils.helpers import load_text
+from utils.help_load_res import load_text
+
 
 def set_commands():
     txt_list = load_text('help.txt').split('\n')

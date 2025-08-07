@@ -6,7 +6,8 @@ from aiogram.types import Message
 from keyboards.all_kbs import random_kb
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz
 from storage.abstract_storage import AbstractStorage
-from utils.helpers import load_text, send_photo, rnd_text
+from utils.help_messages import send_photo
+from utils.help_load_res import load_text, rnd_text
 
 cmd_router = Router()
 

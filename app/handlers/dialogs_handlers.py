@@ -1,15 +1,13 @@
-import asyncio
-
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
-from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
 from keyboards.all_kbs import random_kb
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
-from utils.helpers import load_prompt, load_text, send_photo, safe_markdown_edit, extract_image_urls
+from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo, recognize_photo
+from utils.help_load_res import load_text, load_prompt
 
 dialog_router = Router()
 
@@ -75,19 +73,3 @@ async def quiz(message: Message, gpt: GPT):
     await safe_markdown_edit(answer_message, response)
 
 
-async def recognize_photo(file_url: str, message: Message, gpt: GPT):
-    answer_message = await message.answer('Рассматривает фото...')
-    img_response = await gpt.ask_image(
-        file_url,
-        prompt=load_prompt("image_recognition.txt"),
-        token=CHAT_GPT_TOKEN,
-        base_url=CHAT_GPT_BASE_URL,
-        model=CHAT_GPT_MODEL
-    )
-    if img_response.startswith('ERROR'):
-        await answer_message.edit_text(
-            "Извини, братан! Фото конкретно не грузится. Может санкции, а может происки Масонов с Рептилоидами. Короче, давай другое.")
-    else:
-        await answer_message.edit_text('Думает, чего бы умного сказать...')
-        text_response = await gpt.ask_once(message, prompt=load_prompt("blind.txt"), text=img_response)
-        await answer_message.edit_text(text_response)
