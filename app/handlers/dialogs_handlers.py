@@ -1,8 +1,10 @@
+import re
+
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb
+from keyboards.all_kbs import random_kb, get_keyboard
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
@@ -82,8 +84,21 @@ async def random_fact(callback: CallbackQuery, gpt: GPT):
 @dialog_router.message(F.text, Quiz.game)
 async def quiz(message: Message, gpt: GPT):
     answer_message = await message.answer('Генерирует вопрос...')
-    response = await gpt.dialog(
+    response_text = await gpt.dialog(
         message,
         load_prompt('quiz.txt'),
         bot_message=answer_message)
-    await safe_markdown_edit(answer_message, response)
+    question_text, options = extract_answers(response_text)
+    keyboard = get_keyboard(options, 'reply', adjust='2 2')
+    await safe_markdown_edit(answer_message, question_text)
+    if options:
+        await message.answer('Твой ответ:', reply_markup=keyboard)
+    else:
+        await message.answer('Твой ответ:', reply_markup=ReplyKeyboardRemove())
+
+
+def extract_answers(text):
+    options = re.findall(r'\n(\d+\)[^\n]*)', text)
+    options = list(map(str.strip, options))
+    cleaned_text = re.sub(r'\n\s*\d+\)[^\n]*', '', text).strip()
+    return cleaned_text, options

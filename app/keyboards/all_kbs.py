@@ -1,7 +1,7 @@
 from gc import callbacks
 
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 from utils.help_load_res import load_text
 
@@ -35,3 +35,21 @@ def random_kb():
         callback_data="cancel_and_restart"
     ))
     return builder.as_markup()
+
+def get_keyboard(btn_names: list[str], keyboard_type: str = "inline", adjust: str = "1"):
+    kb_adjust = map(int, adjust.split(' '))
+    if keyboard_type == "inline":
+        builder = InlineKeyboardBuilder()
+        for button in btn_names:
+            builder.button(text=button, callback_data=f"action_{button}")
+        builder.adjust(*kb_adjust)
+        return builder.as_markup()
+    else:
+        builder = ReplyKeyboardBuilder()
+        for button in btn_names:
+            builder.add(KeyboardButton(text=button))
+        builder.adjust(*kb_adjust)
+        return builder.as_markup(
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
