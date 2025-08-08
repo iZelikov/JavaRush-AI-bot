@@ -1,5 +1,3 @@
-from gc import callbacks
-
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
@@ -24,6 +22,7 @@ def main_kb():
         one_time_keyboard=True)
     return keyboard
 
+
 def random_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
@@ -33,6 +32,18 @@ def random_kb():
     builder.add(InlineKeyboardButton(
         text="Хватит",
         callback_data="cancel_and_restart"
+    ))
+    return builder.as_markup()
+
+def resume_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text="Дальше",
+        callback_data="next_info")
+    )
+    builder.add(InlineKeyboardButton(
+        text="Давай заново!",
+        callback_data="restart_resume"
     ))
     return builder.as_markup()
 

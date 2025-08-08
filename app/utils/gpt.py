@@ -79,9 +79,11 @@ class GPT:
             logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
             return 'ERROR: Произошла неведомая фигня... GPT ушёл в отказ.'
 
-    async def _handle_stream(self,
-                             stream: AsyncStream[ChatCompletionChunk],
-                             bot_message: Message = None) -> str:
+    async def _handle_stream(
+            self,
+            stream: AsyncStream[ChatCompletionChunk],
+            bot_message: Message = None) -> str:
+
         buffer = []
         if bot_message:
             bot_message = await bot_message.edit_text('...')
@@ -139,8 +141,10 @@ class GPT:
                      user_message: Message,
                      prompt: str = "",
                      text: str = "",
+                     user_id: int = None,
                      bot_message: Message = None) -> str:
-        user_id = user_message.from_user.id
+
+        user_id = user_id or user_message.from_user.id
         request_text = text or user_message.text or user_message.caption or ""
 
         history = await self.storage.get_history(user_id)

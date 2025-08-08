@@ -4,7 +4,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from keyboards.all_kbs import random_kb
-from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz
+from utils.help_quiz import get_quiz_keyboard
+from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume
 from storage.abstract_storage import AbstractStorage
 from utils.help_messages import send_photo
 from utils.help_load_res import load_text
@@ -44,11 +45,15 @@ async def cmd_img(message: Message, storage:AbstractStorage, state: FSMContext):
 @cmd_router.message(Command('quiz'))
 async def cmd_quiz(message: Message, storage:AbstractStorage, state: FSMContext):
     await state.clear()
-    await state.set_state(Quiz.game)
+    await state.set_state(Quiz.select_theme)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'vilka.jpg')
-    await message.answer(load_text('command_quiz.txt',0))
-    await message.answer(load_text('command_quiz.txt',1), reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        load_text('command_quiz.txt',0),
+        reply_markup=ReplyKeyboardRemove())
+    await message.answer(
+        load_text('command_quiz.txt',1),
+        reply_markup=get_quiz_keyboard(6))
 
 
 @cmd_router.message(Command('random'))
@@ -62,10 +67,14 @@ async def cmd_random(message: Message, storage:AbstractStorage, state: FSMContex
 
 
 @cmd_router.message(Command('resume'))
-async def cmd_resume(message: Message, storage:AbstractStorage):
+async def cmd_resume(message: Message, storage:AbstractStorage, state:FSMContext):
+    await state.clear()
+    await state.set_state(Resume.profession)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'resume.jpg')
     await message.answer(load_text('command_resume.txt'), reply_markup=ReplyKeyboardRemove())
+    await message.answer(load_text('resume.txt', 0))
+    await message.answer(load_text('resume.txt', 1))
 
 
 @cmd_router.message(Command('sovet'))

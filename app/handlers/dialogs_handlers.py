@@ -1,15 +1,14 @@
-import re
-
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from keyboards.all_kbs import random_kb, get_keyboard
-from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz
+from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
 from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo, recognize_photo
 from utils.help_load_res import load_text, load_prompt
+from utils.help_quiz import extract_answers, get_answers_keyboard, generate_quiz
 
 dialog_router = Router()
 
@@ -81,6 +80,27 @@ async def random_fact(callback: CallbackQuery, gpt: GPT):
     await safe_markdown_edit(answer_message, response, reply_markup=random_kb())
 
 
+@dialog_router.callback_query(Quiz.select_theme)
+async def select_theme(callback: CallbackQuery, gpt: GPT, state: FSMContext):
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    theme = f"Тема: *{callback.data.split('_')[1]}*"
+    await callback.message.answer(theme)
+    await state.set_state(Quiz.game)
+    await generate_quiz(
+        callback.message,
+        gpt,
+        text=theme,
+        user_id=callback.from_user.id
+    )
+
+
+@dialog_router.message(F.text, Quiz.select_theme)
+async def select_theme(message: Message, gpt: GPT, state: FSMContext):
+    await state.set_state(Quiz.game)
+    await generate_quiz(message, gpt)
+
+
 @dialog_router.message(F.text, Quiz.game)
 async def quiz(message: Message, gpt: GPT):
     answer_message = await message.answer('Генерирует вопрос...')
@@ -89,16 +109,16 @@ async def quiz(message: Message, gpt: GPT):
         load_prompt('quiz.txt'),
         bot_message=answer_message)
     question_text, options = extract_answers(response_text)
-    keyboard = get_keyboard(options, 'reply', adjust='2 2')
     await safe_markdown_edit(answer_message, question_text)
     if options:
-        await message.answer('Твой ответ:', reply_markup=keyboard)
+        await message.answer(
+            'Твой ответ:',
+            reply_markup=get_answers_keyboard(options))
     else:
-        await message.answer('Твой ответ:', reply_markup=ReplyKeyboardRemove())
+        await message.answer(
+            'Твой ответ:',
+            reply_markup=ReplyKeyboardRemove())
 
-
-def extract_answers(text):
-    options = re.findall(r'\n(\d+\)[^\n]*)', text)
-    options = list(map(str.strip, options))
-    cleaned_text = re.sub(r'\n\s*\d+\)[^\n]*', '', text).strip()
-    return cleaned_text, options
+@dialog_router.callback_query(Resume.profession)
+async def get_prof(message: Message, gpt:GPT, state:FSMContext):
+    pass

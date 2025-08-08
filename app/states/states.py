@@ -10,4 +10,13 @@ class RandomFacts(StatesGroup):
     next_fact = State()
 
 class Quiz(StatesGroup):
+    select_theme = State()
     game = State()
+
+class Resume(StatesGroup):
+    profession = State()
+    education = State()
+    skills = State()
+    experience = State()
+    projects = State()
+    final_edition = State()
