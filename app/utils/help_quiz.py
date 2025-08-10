@@ -16,12 +16,12 @@ def get_themes(number: int) -> list[str]:
 
 
 def extract_answers(text):
-    raw_options = re.findall(r'\n([1-4]\)[^\n]*)', text)
+    raw_options = re.findall(r'\D([1-4]\)[^\n]*)', text)
     options = []
     for opt in raw_options:
-        split_options = re.split(r'(?=[1-4]\))', opt)
+        split_options = re.split(r'\D(?=[1-4]\))', opt)
         options.extend([o.strip() for o in split_options if o.strip()])
-    cleaned_text = re.sub(r'\n[1-4]\)[^\n]*', '', text)
+    cleaned_text = re.sub(r'\D([1-4]\)[^\n]*)', '', text)
     cleaned_text = re.sub(r'\n{3,}', '\n\n', cleaned_text).strip()
     return cleaned_text, options
 

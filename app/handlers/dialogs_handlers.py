@@ -95,14 +95,18 @@ async def select_theme(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     )
 
 
-@dialog_router.message(F.text, Quiz.select_theme)
+@dialog_router.message(Quiz.select_theme)
 async def select_theme(message: Message, gpt: GPT, state: FSMContext):
     await state.set_state(Quiz.game)
     await generate_quiz(message, gpt)
 
 
-@dialog_router.message(F.text, Quiz.game)
+@dialog_router.message(Quiz.game)
 async def quiz(message: Message, gpt: GPT):
+    temp_msg = await message.answer(
+        'Принято!',
+        reply_markup=ReplyKeyboardRemove())
+    await temp_msg.delete()
     answer_message = await message.answer('Генерирует вопрос...')
     response_text = await gpt.dialog(
         message,
@@ -119,6 +123,7 @@ async def quiz(message: Message, gpt: GPT):
             'Твой ответ:',
             reply_markup=ReplyKeyboardRemove())
 
+
 @dialog_router.callback_query(Resume.profession)
-async def get_prof(message: Message, gpt:GPT, state:FSMContext):
+async def get_prof(message: Message, gpt: GPT, state: FSMContext):
     pass
