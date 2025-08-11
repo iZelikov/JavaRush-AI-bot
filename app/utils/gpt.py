@@ -92,7 +92,7 @@ class GPT:
 
             async for chunk in stream:
                 part = chunk.choices[0].delta.content
-                if part:
+                if part is not None:
                     buffer.append(part)
                 current_time = asyncio.get_event_loop().time()
                 if current_time - last_update >= update_interval and buffer:
