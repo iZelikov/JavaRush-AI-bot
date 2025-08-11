@@ -42,7 +42,7 @@ def resume_kb():
         callback_data="next_info")
     )
     builder.add(InlineKeyboardButton(
-        text="Давай заново!",
+        text="Начать с начала",
         callback_data="restart_resume"
     ))
     return builder.as_markup()

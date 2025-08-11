@@ -3,12 +3,13 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb
+from keyboards.all_kbs import random_kb, resume_kb
 from utils.help_quiz import get_quiz_keyboard
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume
 from storage.abstract_storage import AbstractStorage
 from utils.help_messages import send_photo
 from utils.help_load_res import load_text
+from utils.help_resume import next_question
 
 cmd_router = Router()
 
@@ -73,8 +74,9 @@ async def cmd_resume(message: Message, storage:AbstractStorage, state:FSMContext
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'resume.jpg')
     await message.answer(load_text('command_resume.txt'), reply_markup=ReplyKeyboardRemove())
-    await message.answer(load_text('resume.txt', 0))
-    await message.answer(load_text('resume.txt', 1))
+    msg_text = load_text('resume.txt', 0)
+    await message.answer(msg_text)
+    await next_question(message, state,1)
 
 
 @cmd_router.message(Command('sovet'))

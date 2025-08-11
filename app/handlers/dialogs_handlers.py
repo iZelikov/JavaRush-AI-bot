@@ -1,14 +1,16 @@
 from aiogram import Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb, get_keyboard
+from keyboards.all_kbs import random_kb, get_keyboard, resume_kb
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
 from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo, recognize_photo
 from utils.help_load_res import load_text, load_prompt
 from utils.help_quiz import extract_answers, get_answers_keyboard, generate_quiz
+from utils.help_resume import next_question, final_question
 
 dialog_router = Router()
 
@@ -123,7 +125,58 @@ async def quiz(message: Message, gpt: GPT):
             'Твой ответ:',
             reply_markup=ReplyKeyboardRemove())
 
+@dialog_router.callback_query(F.data == 'restart_resume')
+async def new_resume(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await state.set_state(Resume.profession)
+    await send_photo(callback.message, 'resume.jpg')
+    await callback.message.answer('Погнали заново!')
+    await next_question(callback.message, state, 1, callback)
 
-@dialog_router.callback_query(Resume.profession)
-async def get_prof(message: Message, gpt: GPT, state: FSMContext):
-    pass
+
+@dialog_router.callback_query(F.data == 'next_info', Resume.profession)
+async def get_education(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Resume.education)
+    await next_question(callback.message, state, 2, callback)
+
+
+@dialog_router.callback_query(F.data == 'next_info', Resume.education)
+async def get_skills(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Resume.skills)
+    await next_question(callback.message, state, 3, callback)
+
+
+@dialog_router.callback_query(F.data == 'next_info', Resume.skills)
+async def get_experience(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Resume.experience)
+    await next_question(callback.message, state, 4, callback)
+
+
+@dialog_router.callback_query(F.data == 'next_info', Resume.experience)
+async def get_projects(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Resume.projects)
+    await next_question(callback.message, state, 5, callback)
+
+
+@dialog_router.callback_query(F.data == 'next_info', Resume.projects)
+async def get_final(callback: CallbackQuery, gpt: GPT, state: FSMContext):
+    await state.set_state(Resume.final_edition)
+    await final_question(callback.message, state, gpt, 6, callback)
+
+@dialog_router.message(StateFilter(Resume.final_edition))
+async def final(message: Message, gpt: GPT, state: FSMContext):
+    data = await state.get_data()
+    text = "\n".join(data['resume'])
+    answer_message = await message.answer("Кручу, верчу, HR запутать хочу...")
+    prompt = f'{load_prompt("resume.txt")}\n{text}'
+    response_text = await gpt.dialog(
+        message,
+        prompt,
+        bot_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)
+
+@dialog_router.message(StateFilter(*Resume.__states__))
+async def get_prof(message: Message, state: FSMContext):
+    current_data = await state.get_data()
+    current_data['resume'] += [message.text]
+    await state.update_data(current_data)
