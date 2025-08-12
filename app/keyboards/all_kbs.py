@@ -1,3 +1,5 @@
+import json
+
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
@@ -35,6 +37,7 @@ def random_kb():
     ))
     return builder.as_markup()
 
+
 def resume_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
@@ -46,6 +49,38 @@ def resume_kb():
         callback_data="restart_resume"
     ))
     return builder.as_markup()
+
+
+def entertain_kb():
+    entertainments = json.loads(load_text("entertainments.json"))
+    builder = InlineKeyboardBuilder()
+    for key, value in entertainments.items():
+        builder.button(text=value['name'], callback_data=key)
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def genre_kb(entertain):
+    entertainments = json.loads(load_text("entertainments.json"))
+    builder = InlineKeyboardBuilder()
+    for key, value in entertainments[entertain]['genres'].items():
+        builder.button(text=value, callback_data=key)
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def user_prefer_kb():
+    builder = InlineKeyboardBuilder()
+    builder.add(InlineKeyboardButton(
+        text="Нравится",
+        callback_data="Нравится")
+    )
+    builder.add(InlineKeyboardButton(
+        text="Не нравится",
+        callback_data="Не нравится"
+    ))
+    return builder.as_markup()
+
 
 def get_keyboard(btn_names: list[str], keyboard_type: str = "inline", adjust: str = "1"):
     kb_adjust = map(int, adjust.split(' '))

@@ -1,10 +1,12 @@
+import json
+
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb, get_keyboard, resume_kb
-from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume
+from keyboards.all_kbs import random_kb, get_keyboard, resume_kb, genre_kb, user_prefer_kb
+from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume, Sovet
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
 from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo, recognize_photo
@@ -125,6 +127,7 @@ async def quiz(message: Message, gpt: GPT):
             'Твой ответ:',
             reply_markup=ReplyKeyboardRemove())
 
+
 @dialog_router.callback_query(F.data == 'restart_resume')
 async def new_resume(callback: CallbackQuery, state: FSMContext):
     await state.clear()
@@ -163,6 +166,7 @@ async def get_final(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     await state.set_state(Resume.final_edition)
     await final_question(callback.message, state, gpt, 6, callback)
 
+
 @dialog_router.message(StateFilter(Resume.final_edition))
 async def final(message: Message, gpt: GPT, state: FSMContext):
     data = await state.get_data()
@@ -175,8 +179,65 @@ async def final(message: Message, gpt: GPT, state: FSMContext):
         bot_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
 
+
 @dialog_router.message(StateFilter(*Resume.__states__))
-async def get_prof(message: Message, state: FSMContext):
+async def accum_messages(message: Message, state: FSMContext):
     current_data = await state.get_data()
     current_data['resume'] += [message.text]
     await state.update_data(current_data)
+
+
+@dialog_router.callback_query(Sovet.choose_entertainment)
+async def choose_genre(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Sovet.choose_genre)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    entertainments = json.loads(load_text("entertainments.json"))
+    await callback.message.answer(entertainments[callback.data]['name'])
+    await callback.message.answer("Выбери жанр развлекухи:", reply_markup=genre_kb(callback.data))
+    await state.set_data({"entertain": callback.data})
+
+
+@dialog_router.callback_query(Sovet.choose_genre)
+async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
+    await state.set_state(Sovet.next_sovet)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    data = await state.get_data()
+    entertain = data['entertain']
+    genre = callback.data
+    entertainments = json.loads(load_text("entertainments.json"))
+    entertainment_name = entertainments[entertain]['name']
+    genre_name = entertainments[entertain]['genres'][genre].split(' - ')[0]
+    text = f"Пользователь выбрал {entertainment_name} жанра {genre_name}"
+    await callback.message.answer(genre_name)
+    answer_message = await callback.message.answer("Гопота совещается...")
+    response_text = await gpt.dialog(
+        callback.message,
+        load_prompt('sovet.txt'),
+        text=text,
+        bot_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)
+    await callback.message.answer("Ну как тебе?", reply_markup=user_prefer_kb())
+
+
+@dialog_router.callback_query(Sovet.next_sovet)
+async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.message.delete()
+    await callback.answer()
+    text = callback.data
+    await callback.message.answer(text)
+    answer_message = await callback.message.answer("Гопота совещается...")
+    response_text = await gpt.dialog(
+        callback.message,
+        load_prompt('sovet.txt'),
+        text=text,
+        bot_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)
+    await callback.message.answer("Как тебе?", reply_markup=user_prefer_kb())
+
+
+@dialog_router.message(StateFilter(*Sovet.__states__))
+async def wrong_message(message: Message, state: FSMContext):
+    await message.answer('Тут говорить не надо, тут надо на кнопки жмакать!')

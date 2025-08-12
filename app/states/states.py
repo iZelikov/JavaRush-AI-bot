@@ -20,3 +20,8 @@ class Resume(StatesGroup):
     experience = State()
     projects = State()
     final_edition = State()
+
+class Sovet(StatesGroup):
+    choose_entertainment = State()
+    choose_genre = State()
+    next_sovet = State()
