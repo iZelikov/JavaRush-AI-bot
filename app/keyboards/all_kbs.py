@@ -72,12 +72,16 @@ def genre_kb(entertain):
 def user_prefer_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
-        text="Нравится",
+        text="✅ Ok",
         callback_data="Нравится")
     )
     builder.add(InlineKeyboardButton(
-        text="Не нравится",
+        text="❌ Not Ok",
         callback_data="Не нравится"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="🔄 Заново!",
+        callback_data="sovet_reset"
     ))
     return builder.as_markup()
 

@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb, get_keyboard, resume_kb, genre_kb, user_prefer_kb
+from keyboards.all_kbs import random_kb, get_keyboard, resume_kb, genre_kb, user_prefer_kb, entertain_kb
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume, Sovet
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
@@ -185,6 +185,17 @@ async def accum_messages(message: Message, state: FSMContext):
     current_data = await state.get_data()
     current_data['resume'] += [message.text]
     await state.update_data(current_data)
+
+
+@dialog_router.callback_query(F.data == 'sovet_reset')
+async def sovet_reset(callback: CallbackQuery, storage: AbstractStorage, state: FSMContext):
+    await state.clear()
+    await state.set_state(Sovet.choose_entertainment)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.message.delete()
+    await storage.reset_history(callback.message.from_user.id)
+    await send_photo(callback.message, 'company-tv.jpg')
+    await callback.message.answer(load_text('command_sovet.txt', 1), reply_markup=entertain_kb())
 
 
 @dialog_router.callback_query(Sovet.choose_entertainment)
