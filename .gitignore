@@ -4,6 +4,7 @@ openai-token.txt
 app_secrets
 data/
 logs/
+temp/
 Задание/
 
 # Byte-compiled / optimized / DLL files

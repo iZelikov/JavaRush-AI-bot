@@ -16,4 +16,6 @@ REDIS_DB = getenv("REDIS_DB")
 MAX_HISTORY = getenv("MAX_HISTORY")
 
 BASE_DIR = Path(__file__).parent.resolve()
+TEMP_DIR = BASE_DIR / "temp"
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
