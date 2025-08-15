@@ -4,7 +4,7 @@ import logging
 from typing import Optional, List, Dict, Union
 
 from aiogram.enums import ChatAction
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from openai import RateLimitError, APIError, APITimeoutError, AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
@@ -138,13 +138,14 @@ class GPT:
         return response_text
 
     async def dialog(self,
-                     user_message: Message,
+                     user_message: Message | CallbackQuery,
                      prompt: str = "",
                      text: str = "",
-                     user_id: int = None,
                      bot_message: Message = None) -> str:
 
-        user_id = user_id or user_message.from_user.id
+        user_id = user_message.from_user.id
+        if isinstance(user_message, CallbackQuery):
+            user_message = user_message.message
         request_text = text or user_message.text or user_message.caption or ""
 
         history = await self.storage.get_history(user_id)
@@ -167,10 +168,12 @@ class GPT:
         return response_text
 
     async def ask_once(self,
-                       user_message: Message,
+                       user_message: Message | CallbackQuery,
                        prompt: str = "",
                        text: str = "",
                        bot_message: Message = None) -> str:
+        if isinstance(user_message, CallbackQuery):
+            user_message = user_message.message
         request_text = text or user_message.text or user_message.caption or ""
 
         messages = [
@@ -188,7 +191,10 @@ class GPT:
             img_url,
             prompt: str = "Опиши всё что видишь на картинке",
             token: str = None,
-            base_url: str = None, model=None) -> str:
+            base_url: str = None,
+            model=None
+    ) -> str:
+
         token = token or self.token
         base_url = base_url or self.base_url
         model = model or "gpt-4-turbo"

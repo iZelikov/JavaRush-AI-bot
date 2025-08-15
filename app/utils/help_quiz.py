@@ -1,7 +1,7 @@
 import re
 from random import sample
 
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 
 from keyboards.all_kbs import get_keyboard
 from utils.gpt import GPT
@@ -49,27 +49,28 @@ def extract_answers(text: str) -> tuple[str, list[str]]:
         full_option = f"{markers[i][0]} {option_text}"
         options.append(full_option)
 
+    # Как обычно, всё удаляется криво, так что пусть лучше остаются.
     # Шаг 3: Удалить варианты из текста
     # Создаем список диапазонов для удаления (от начала маркера до конца его текста)
-    remove_ranges = []
-    for i, (marker, start, end) in enumerate(markers):
-        if i < len(markers) - 1:
-            remove_end = markers[i + 1][1]  # до начала следующего маркера
-        else:
-            remove_end = end + len(options[i]) - len(marker)  # конец текста варианта
-
-        remove_ranges.append((start, remove_end))
+    # remove_ranges = []
+    # for i, (marker, start, end) in enumerate(markers):
+    #     if i < len(markers) - 1:
+    #         remove_end = markers[i + 1][1]  # до начала следующего маркера
+    #     else:
+    #         remove_end = end + len(options[i]) - len(marker)  # конец текста варианта
+    #
+    #     remove_ranges.append((start, remove_end))
 
     # Сортируем диапазоны в обратном порядке для безопасного удаления
-    remove_ranges.sort(reverse=True)
-    cleaned_text = text
-    for start, end in remove_ranges:
-        cleaned_text = cleaned_text[:start] + cleaned_text[end:]
+    # remove_ranges.sort(reverse=True)
+    # cleaned_text = text
+    # for start, end in remove_ranges:
+    #     cleaned_text = cleaned_text[:start] + cleaned_text[end:]
 
     # Убрать множественные пустые строки
-    cleaned_text = re.sub(r'(\n\s*){2,}', '\n\n', cleaned_text)
+    # cleaned_text = re.sub(r'(\n\s*){2,}', '\n\n', cleaned_text)
 
-    return cleaned_text, options
+    return text, options
 
 
 def get_answers_keyboard(options):
@@ -83,27 +84,26 @@ def get_quiz_keyboard(number: int):
 
 
 async def generate_quiz(
-        message: Message,
+        message: Message | CallbackQuery,
         gpt: GPT,
-        text='',
-        user_id: int = None):
-    if user_id is None:
-        user_id = message.from_user.id
-
-    answer_message = await message.answer('Генерирует вопрос...')
+        text=''):
+    if isinstance(message, CallbackQuery):
+        reply_message = message.message
+    else:
+        reply_message = message
+    answer_message = await reply_message.answer('Генерирует вопрос...')
     response_text = await gpt.dialog(
         message,
         load_prompt('quiz.txt'),
         bot_message=answer_message,
-        text=text,
-        user_id=user_id)
+        text=text)
     question_text, options = extract_answers(response_text)
     await safe_markdown_edit(answer_message, question_text)
     if options:
-        await message.answer(
+        await reply_message.answer(
             'Твой ответ:',
             reply_markup=get_answers_keyboard(options))
     else:
-        await message.answer(
+        await reply_message.answer(
             'Твой ответ:',
             reply_markup=ReplyKeyboardRemove())
