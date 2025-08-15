@@ -5,8 +5,9 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb, get_keyboard, resume_kb, genre_kb, user_prefer_kb, entertain_kb
-from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume, Sovet
+from keyboards.all_kbs import random_kb, genre_kb, user_prefer_kb, entertain_kb
+from keyboards.callbacks import TalkData
+from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume, Sovet, Talk
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
 from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo, recognize_photo
@@ -15,6 +16,11 @@ from utils.help_quiz import extract_answers, get_answers_keyboard, generate_quiz
 from utils.help_resume import next_question, final_question
 
 dialog_router = Router()
+
+
+@dialog_router.message(lambda message: message.sticker)
+async def handle_sticker(message: Message):
+    await message.answer("Смешно, братва заценила! Но ты не отвлекайся, пиши строго по делу!")
 
 
 @dialog_router.callback_query(F.data == 'cancel_and_restart')
@@ -26,12 +32,12 @@ async def cancel_dialog(callback: CallbackQuery, gpt: GPT, state: FSMContext, st
     await send_photo(callback.message, 'chat-gopota.jpg')
     answer_message = await callback.message.answer('Подыскивает прощальные слова...')
     response_text = await gpt.ask_once(
-        callback.message,
+        callback,
         load_prompt('cancel.txt'), text="На сегодня хватит, мне пора идти",
         bot_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
     help_text = load_text('help.txt')
-    await  callback.message.answer(help_text)
+    await  callback.message.answer(help_text, reply_markup=ReplyKeyboardRemove())
 
 
 @dialog_router.message(F.text, GPTDIalog.active_dialog)
@@ -77,7 +83,7 @@ async def random_fact(callback: CallbackQuery, gpt: GPT):
     await callback.answer()
     answer_message = await callback.message.answer('Вспоминает...')
     response = await gpt.dialog(
-        callback.message,
+        callback,
         load_prompt('random_fact.txt'),
         text="Расскажи новый интересный факт",
         bot_message=answer_message)
@@ -92,11 +98,9 @@ async def select_theme(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     await callback.message.answer(theme)
     await state.set_state(Quiz.game)
     await generate_quiz(
-        callback.message,
+        callback,
         gpt,
-        text=theme,
-        user_id=callback.from_user.id
-    )
+        text=theme)
 
 
 @dialog_router.message(Quiz.select_theme)
@@ -132,39 +136,38 @@ async def quiz(message: Message, gpt: GPT):
 async def new_resume(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await state.set_state(Resume.profession)
-    await send_photo(callback.message, 'resume.jpg')
-    await callback.message.answer('Погнали заново!')
-    await next_question(callback.message, state, 1, callback)
+    await callback.message.answer('```Resume:\nМы начинаем резюме...\nДля чего?..\nДля кого?..```')
+    await next_question(callback, state, 1)
 
 
 @dialog_router.callback_query(F.data == 'next_info', Resume.profession)
 async def get_education(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Resume.education)
-    await next_question(callback.message, state, 2, callback)
+    await next_question(callback, state, 2)
 
 
 @dialog_router.callback_query(F.data == 'next_info', Resume.education)
 async def get_skills(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Resume.skills)
-    await next_question(callback.message, state, 3, callback)
+    await next_question(callback, state, 3)
 
 
 @dialog_router.callback_query(F.data == 'next_info', Resume.skills)
 async def get_experience(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Resume.experience)
-    await next_question(callback.message, state, 4, callback)
+    await next_question(callback, state, 4)
 
 
 @dialog_router.callback_query(F.data == 'next_info', Resume.experience)
 async def get_projects(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Resume.projects)
-    await next_question(callback.message, state, 5, callback)
+    await next_question(callback, state, 5)
 
 
 @dialog_router.callback_query(F.data == 'next_info', Resume.projects)
 async def get_final(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     await state.set_state(Resume.final_edition)
-    await final_question(callback.message, state, gpt, 6, callback)
+    await final_question(callback, state, gpt, 6)
 
 
 @dialog_router.message(StateFilter(Resume.final_edition))
@@ -220,16 +223,16 @@ async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     entertainments = json.loads(load_text("entertainments.json"))
     entertainment_name = entertainments[entertain]['name']
     genre_name = entertainments[entertain]['genres'][genre].split(' - ')[0]
-    text = f"Пользователь выбрал {entertainment_name} жанра {genre_name}"
+    text = f"Пользователь выбрал {entertainment_name}. Жанр - {genre_name}."
     await callback.message.answer(genre_name)
-    answer_message = await callback.message.answer("Гопота совещается...")
+    answer_message = await callback.message.answer("ГоПоТа совещается...")
     response_text = await gpt.dialog(
-        callback.message,
+        callback,
         load_prompt('sovet.txt'),
         text=text,
         bot_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
-    await callback.message.answer("Ну как тебе?", reply_markup=user_prefer_kb())
+    await callback.message.answer("Как тебе?", reply_markup=user_prefer_kb())
 
 
 @dialog_router.callback_query(Sovet.next_sovet)
@@ -239,9 +242,9 @@ async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     await callback.answer()
     text = callback.data
     await callback.message.answer(text)
-    answer_message = await callback.message.answer("Гопота совещается...")
+    answer_message = await callback.message.answer("ГоПоТа совещается...")
     response_text = await gpt.dialog(
-        callback.message,
+        callback,
         load_prompt('sovet.txt'),
         text=text,
         bot_message=answer_message)
@@ -252,3 +255,33 @@ async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
 @dialog_router.message(StateFilter(*Sovet.__states__))
 async def wrong_message(message: Message, state: FSMContext):
     await message.answer('Тут говорить не надо, тут надо на кнопки жмакать!')
+
+
+@dialog_router.callback_query(TalkData.filter(), Talk.active_dialog)
+async def robot_dialog(callback: CallbackQuery, callback_data: TalkData, gpt: GPT, state: FSMContext):
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer()
+    await send_photo(callback.message, callback_data.image_file)
+    prompt = f"{load_prompt('base_talk.txt')}\n{load_prompt(callback_data.prompt_file)}"
+    await state.set_data({'prompt': prompt, 'name': callback_data.name})
+    answer_message = await callback.message.answer(f'{callback_data.name} думает...')
+    response_text = await gpt.dialog(
+        callback,
+        prompt=prompt,
+        text='start_dialog',
+        bot_message=answer_message
+    )
+    await safe_markdown_edit(answer_message, response_text)
+
+
+@dialog_router.message(Talk.active_dialog)
+async def robot_dialog(message: Message, gpt: GPT, state: FSMContext):
+    data = await state.get_data()
+    prompt = data['prompt']
+    name = data['name']
+    answer_message = await message.answer(f'{name} думает...')
+    response_text = await gpt.dialog(
+        message,
+        prompt=prompt,
+        bot_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)

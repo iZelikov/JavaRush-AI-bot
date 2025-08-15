@@ -3,9 +3,9 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb, resume_kb, entertain_kb
+from keyboards.all_kbs import random_kb, resume_kb, entertain_kb, robots_kb, start_resume
 from utils.help_quiz import get_quiz_keyboard
-from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet
+from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk
 from storage.abstract_storage import AbstractStorage
 from utils.help_messages import send_photo
 from utils.help_load_res import load_text
@@ -63,7 +63,7 @@ async def cmd_random(message: Message, storage: AbstractStorage, state: FSMConte
     await state.set_state(RandomFacts.next_fact)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'random.jpg')
-    await message.answer(load_text('command_random.txt', 0))
+    await message.answer(load_text('command_random.txt', 0), reply_markup=ReplyKeyboardRemove())
     await message.answer(load_text('command_random.txt', 1), reply_markup=random_kb())
 
 
@@ -75,8 +75,8 @@ async def cmd_resume(message: Message, storage: AbstractStorage, state: FSMConte
     await send_photo(message, 'resume.jpg')
     await message.answer(load_text('command_resume.txt'), reply_markup=ReplyKeyboardRemove())
     msg_text = load_text('resume.txt', 0)
-    await message.answer(msg_text)
-    await next_question(message, state, 1)
+    await message.answer(msg_text, reply_markup=start_resume())
+
 
 
 @cmd_router.message(Command('sovet'))
@@ -90,10 +90,13 @@ async def cmd_sovet(message: Message, storage: AbstractStorage, state: FSMContex
 
 
 @cmd_router.message(Command('talk'))
-async def cmd_talk(message: Message, storage: AbstractStorage):
+async def cmd_talk(message: Message, storage: AbstractStorage, state:FSMContext):
+    await state.clear()
+    await state.set_state(Talk.active_dialog)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'robots.jpg')
     await message.answer(load_text('command_talk.txt'), reply_markup=ReplyKeyboardRemove())
+    await message.answer(load_text('command_talk.txt',1), reply_markup=robots_kb())
 
 
 @cmd_router.message(Command('train'))

@@ -25,3 +25,7 @@ class Sovet(StatesGroup):
     choose_entertainment = State()
     choose_genre = State()
     next_sovet = State()
+
+class Talk(StatesGroup):
+    choose_person = State()
+    active_dialog = State()

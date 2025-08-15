@@ -3,7 +3,9 @@ import json
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
-from utils.help_load_res import load_text
+from config import BASE_DIR
+from keyboards.callbacks import TalkData
+from utils.help_load_res import load_text, load_prompt
 
 
 def set_commands():
@@ -37,6 +39,17 @@ def random_kb():
     ))
     return builder.as_markup()
 
+def start_resume():
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text='Расскажу как на духу!',
+        callback_data='restart_resume')
+    builder.button(
+        text='Фиг тебе, а не персональные данные!',
+        callback_data="cancel_and_restart"
+    )
+    builder.adjust(1)
+    return builder.as_markup()
 
 def resume_kb():
     builder = InlineKeyboardBuilder()
@@ -73,11 +86,11 @@ def user_prefer_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
         text="✅ Ok",
-        callback_data="Нравится")
+        callback_data="✅ Нравится")
     )
     builder.add(InlineKeyboardButton(
         text="❌ Not Ok",
-        callback_data="Не нравится"
+        callback_data="❌ Не нравится"
     ))
     builder.add(InlineKeyboardButton(
         text="🔄 Заново!",
@@ -103,3 +116,21 @@ def get_keyboard(btn_names: list[str], keyboard_type: str = "inline", adjust: st
             resize_keyboard=True,
             one_time_keyboard=True
         )
+
+
+def robots_kb():
+    prompt_dir = BASE_DIR / 'resources' / 'texts' / 'prompts'
+    files = [file.name for file in prompt_dir.iterdir() if file.is_file() and file.name.startswith('talk_')]
+    persons = []
+    for name in files:
+        text = load_prompt(name)
+        persons.append(text[5: text.find('\n')])
+    builder = InlineKeyboardBuilder()
+    for button, filename in zip(persons, files):
+        builder.button(text=button, callback_data=TalkData(
+            name=button,
+            prompt_file=filename,
+            image_file=filename.replace('txt', 'jpg')
+        ))
+    builder.adjust(1)
+    return builder.as_markup()
