@@ -1,0 +1,24 @@
+CREATE TABLE IF NOT EXISTS chat_history
+(
+    id
+        INTEGER
+        PRIMARY
+            KEY
+        AUTOINCREMENT,
+    user_id
+        INTEGER
+        NOT
+            NULL,
+    role
+        TEXT
+        NOT
+            NULL,
+    content
+        TEXT
+        NOT
+            NULL,
+    timestamp
+        DATETIME
+        DEFAULT
+            CURRENT_TIMESTAMP
+)

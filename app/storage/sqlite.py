@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Any
 from aiogram.fsm.storage.base import StorageKey
 
 from storage.abstract_storage import AbstractStorage
+from utils.help_load_res import load_sql
 
 
 class SQLiteStorage(AbstractStorage):
@@ -18,53 +19,13 @@ class SQLiteStorage(AbstractStorage):
         cursor = self.conn.cursor()
 
         # создаём таблицу стейтов (если не существует)
-        cursor.execute('''
-                          CREATE TABLE IF NOT EXISTS fsm_states
-                          (
-                              user_id
-                              INTEGER
-                              PRIMARY
-                              KEY,
-                              state
-                              TEXT,
-                              data
-                              TEXT
-                          )
-                          ''')
+        cursor.execute(load_sql('create_state_table.sql'))
 
         # Создаем таблицу истории (если не существует)
-        cursor.execute('''
-                       CREATE TABLE IF NOT EXISTS chat_history
-                       (
-                           id
-                           INTEGER
-                           PRIMARY
-                           KEY
-                           AUTOINCREMENT,
-                           user_id
-                           INTEGER
-                           NOT
-                           NULL,
-                           role
-                           TEXT
-                           NOT
-                           NULL,
-                           content
-                           TEXT
-                           NOT
-                           NULL,
-                           timestamp
-                           DATETIME
-                           DEFAULT
-                           CURRENT_TIMESTAMP
-                       )
-                       ''')
+        cursor.execute(load_sql('create_history_table.sql'))
 
         # Создаем индекс (отдельным запросом)
-        cursor.execute('''
-                       CREATE INDEX IF NOT EXISTS idx_chat_history_user_id
-                           ON chat_history(user_id)
-                       ''')
+        cursor.execute(load_sql('create_index.sql'))
 
         self.conn.commit()
 
