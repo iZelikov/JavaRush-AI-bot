@@ -3,13 +3,12 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
-from keyboards.all_kbs import random_kb, resume_kb, entertain_kb, robots_kb, start_resume
+from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, langs_choosing_kb
 from utils.help_quiz import get_quiz_keyboard
-from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk
+from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
 from utils.help_messages import send_photo
 from utils.help_load_res import load_text
-from utils.help_resume import next_question
 
 cmd_router = Router()
 
@@ -78,7 +77,6 @@ async def cmd_resume(message: Message, storage: AbstractStorage, state: FSMConte
     await message.answer(msg_text, reply_markup=start_resume())
 
 
-
 @cmd_router.message(Command('sovet'))
 async def cmd_sovet(message: Message, storage: AbstractStorage, state: FSMContext):
     await state.clear()
@@ -90,13 +88,13 @@ async def cmd_sovet(message: Message, storage: AbstractStorage, state: FSMContex
 
 
 @cmd_router.message(Command('talk'))
-async def cmd_talk(message: Message, storage: AbstractStorage, state:FSMContext):
+async def cmd_talk(message: Message, storage: AbstractStorage, state: FSMContext):
     await state.clear()
     await state.set_state(Talk.active_dialog)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'robots.jpg')
     await message.answer(load_text('command_talk.txt'), reply_markup=ReplyKeyboardRemove())
-    await message.answer(load_text('command_talk.txt',1), reply_markup=robots_kb())
+    await message.answer(load_text('command_talk.txt', 1), reply_markup=robots_kb())
 
 
 @cmd_router.message(Command('train'))
@@ -107,7 +105,10 @@ async def cmd_train(message: Message, storage: AbstractStorage):
 
 
 @cmd_router.message(Command('trans'))
-async def cmd_trans(message: Message, storage: AbstractStorage):
+async def cmd_trans(message: Message, storage: AbstractStorage, state: FSMContext):
+    await state.clear()
+    await state.set_state(Trans.translation)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'univer.jpg')
     await message.answer(load_text('command_trans.txt'), reply_markup=ReplyKeyboardRemove())
+    await message.answer("Выбери Язык:", reply_markup=langs_choosing_kb())

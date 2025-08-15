@@ -39,6 +39,7 @@ def random_kb():
     ))
     return builder.as_markup()
 
+
 def start_resume():
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -50,6 +51,7 @@ def start_resume():
     )
     builder.adjust(1)
     return builder.as_markup()
+
 
 def resume_kb():
     builder = InlineKeyboardBuilder()
@@ -133,4 +135,22 @@ def robots_kb():
             image_file=filename.replace('txt', 'jpg')
         ))
     builder.adjust(1)
+    return builder.as_markup()
+
+
+def langs_choosing_kb():
+    langs = sorted(load_text('languages.txt').split())
+    return get_keyboard(langs)
+
+
+def trans_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="Другой язык",
+        callback_data="other_lang"
+    )
+    builder.button(
+        text="Хватит",
+        callback_data="cancel_and_restart"
+    )
     return builder.as_markup()

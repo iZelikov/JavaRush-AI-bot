@@ -29,3 +29,6 @@ class Sovet(StatesGroup):
 class Talk(StatesGroup):
     choose_person = State()
     active_dialog = State()
+
+class Trans(StatesGroup):
+    translation = State()
