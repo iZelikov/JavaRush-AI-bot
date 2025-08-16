@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class GPT:
-    MAX_MESSAGE_LENGTH = 4000
 
     def __init__(self, gpt_key: str, db: AbstractStorage, base_url: Optional[str] = None):
         self.client = AsyncOpenAI(api_key=gpt_key, base_url=base_url)
@@ -85,15 +84,15 @@ class GPT:
     async def _handle_stream(
             self,
             stream: AsyncStream[ChatCompletionChunk],
-            bot_message: Message = None) -> str:
+            output_message: Message = None) -> str:
 
         full_text_parts = []
         buffer = []
 
-        if bot_message:
-            current_message = await bot_message.edit_text('...')
+        if output_message:
+            current_message = await output_message.edit_text('...')
             last_update = asyncio.get_event_loop().time()
-            update_interval = 1
+            update_interval = 0.5
 
             async for chunk in stream:
                 part = chunk.choices[0].delta.content
@@ -112,8 +111,6 @@ class GPT:
             if buffer:
                 current_message = await self._send_part(current_message, buffer)
 
-            await safe_markdown_edit(current_message, current_message.text)
-
             full_text = ''.join(full_text_parts)
         else:
             async for chunk in stream:
@@ -121,7 +118,6 @@ class GPT:
                 if part:
                     full_text_parts.append(part)
             full_text = ''.join(full_text_parts)
-
         return full_text
 
     async def _send_part(self, message: Message, buffer: list[str]) -> Message:
@@ -133,13 +129,9 @@ class GPT:
             return message
 
         try:
-            if len(message.text) + len(new_part) <= self.MAX_MESSAGE_LENGTH:
-                new_text = f'{message.text}{new_part}'
-                return await message.edit_text(new_text, parse_mode=None)
-            else:
-                await safe_markdown_edit(message, message.text.lstrip('.'))
-                new_message = await message.answer(new_part, parse_mode=None)
-                return new_message
+            new_part = new_part.replace('\n',' ')
+            new_text = f'...{new_part}...'
+            return await message.edit_text(new_text, parse_mode=None)
 
         except Exception as e:
             print(f"Ошибка при редактировании сообщения: {e}")
@@ -147,20 +139,20 @@ class GPT:
 
     async def _get_text_from_stream(self,
                                     messages: list[dict],
-                                    bot_message: Message = None):
+                                    output_message: Message = None):
         response_stream = await self._send_chat_completion(messages=messages, stream=True)
 
         if isinstance(response_stream, str):
             return response_stream
 
-        response_text = await self._handle_stream(response_stream, bot_message)
+        response_text = await self._handle_stream(response_stream, output_message)
         return response_text
 
     async def dialog(self,
                      user_message: Message | CallbackQuery,
                      prompt: str = "",
                      text: str = "",
-                     bot_message: Message = None) -> str:
+                     output_message: Message = None) -> str:
 
         user_id = user_message.from_user.id
         if isinstance(user_message, CallbackQuery):
@@ -177,7 +169,7 @@ class GPT:
 
         await user_message.bot.send_chat_action(chat_id=user_message.chat.id, action=ChatAction.TYPING)
 
-        response_text = await self._get_text_from_stream(messages, bot_message)
+        response_text = await self._get_text_from_stream(messages, output_message)
 
         history += [
             {"role": "user", "content": request_text},
@@ -190,7 +182,7 @@ class GPT:
                        user_message: Message | CallbackQuery,
                        prompt: str = "",
                        text: str = "",
-                       bot_message: Message = None) -> str:
+                       output_message: Message = None) -> str:
         if isinstance(user_message, CallbackQuery):
             user_message = user_message.message
         request_text = text or user_message.text or user_message.caption or ""
@@ -201,7 +193,7 @@ class GPT:
         ]
         await user_message.bot.send_chat_action(chat_id=user_message.chat.id, action=ChatAction.TYPING)
 
-        response_text = await self._get_text_from_stream(messages, bot_message)
+        response_text = await self._get_text_from_stream(messages, output_message)
 
         return response_text
 

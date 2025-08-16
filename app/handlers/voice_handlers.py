@@ -29,7 +29,7 @@ async def gpt_audio_dialog(message: Message, gpt: GPT):
             message,
             load_prompt('gpt.txt'),
             text=recognized_text,
-            bot_message=answer_message)
+            output_message=answer_message)
         await safe_markdown_edit(answer_message, response_text)
         temp_msg = await message.answer('Щас спою...')
         await message_text_to_audio(message, response_text.replace('*', ''))

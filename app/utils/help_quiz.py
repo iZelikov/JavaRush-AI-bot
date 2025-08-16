@@ -95,7 +95,7 @@ async def generate_quiz(
     response_text = await gpt.dialog(
         message,
         load_prompt('quiz.txt'),
-        bot_message=answer_message,
+        output_message=answer_message,
         text=text)
     question_text, options = extract_answers(response_text)
     await safe_markdown_edit(answer_message, question_text)

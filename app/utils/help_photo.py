@@ -26,7 +26,7 @@ async def recognize_photo(file_url: str, message: Message, gpt: GPT):
             message,
             prompt=load_prompt("blind.txt"),
             text=img_response_text,
-            bot_message=answer_message)
+            output_message=answer_message)
         await safe_markdown_edit(answer_message, response_text)
 
 

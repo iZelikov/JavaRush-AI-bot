@@ -43,5 +43,5 @@ async def final_question(
         callback,
         prompt,
         text=text,
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)

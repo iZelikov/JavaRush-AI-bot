@@ -35,7 +35,7 @@ async def cancel_dialog(callback: CallbackQuery, gpt: GPT, state: FSMContext, st
     response_text = await gpt.ask_once(
         callback,
         load_prompt('cancel.txt'), text="На сегодня хватит, мне пора идти",
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
     help_text = load_text('help.txt')
     await  callback.message.answer(help_text, reply_markup=ReplyKeyboardRemove())
@@ -47,8 +47,8 @@ async def gpt_dialog(message: Message, gpt: GPT):
     response_text = await gpt.dialog(
         message,
         load_prompt('gpt.txt'),
-        bot_message=answer_message)
-    # await safe_markdown_edit(answer_message, response_text)
+        output_message=answer_message)
+    await safe_markdown_edit(answer_message, response_text)
 
 
 @dialog_router.message(F.photo, ImageRecognition.ready_to_accept)
@@ -74,7 +74,7 @@ async def random_fact(message: Message, gpt: GPT):
     response = await gpt.dialog(
         message,
         load_prompt('random_fact.txt'),
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response, reply_markup=random_kb())
 
 
@@ -87,7 +87,7 @@ async def random_fact(callback: CallbackQuery, gpt: GPT):
         callback,
         load_prompt('random_fact.txt'),
         text="Расскажи новый интересный факт",
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response, reply_markup=random_kb())
 
 
@@ -120,7 +120,7 @@ async def quiz(message: Message, gpt: GPT):
     response_text = await gpt.dialog(
         message,
         load_prompt('quiz.txt'),
-        bot_message=answer_message)
+        output_message=answer_message)
     question_text, options = extract_answers(response_text)
     await safe_markdown_edit(answer_message, question_text)
     if options:
@@ -180,7 +180,7 @@ async def final(message: Message, gpt: GPT, state: FSMContext):
     response_text = await gpt.dialog(
         message,
         prompt,
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
 
 
@@ -231,7 +231,7 @@ async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
         callback,
         load_prompt('sovet.txt'),
         text=text,
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
     await callback.message.answer("Как тебе?", reply_markup=user_prefer_kb())
 
@@ -248,7 +248,7 @@ async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
         callback,
         load_prompt('sovet.txt'),
         text=text,
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
     await callback.message.answer("Как тебе?", reply_markup=user_prefer_kb())
 
@@ -270,7 +270,7 @@ async def robot_dialog(callback: CallbackQuery, callback_data: TalkData, gpt: GP
         callback,
         prompt=prompt,
         text='start_dialog',
-        bot_message=answer_message
+        output_message=answer_message
     )
     await safe_markdown_edit(answer_message, response_text)
 
@@ -284,7 +284,7 @@ async def robot_dialog(message: Message, gpt: GPT, state: FSMContext):
     response_text = await gpt.dialog(
         message,
         prompt=prompt,
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
 
 
@@ -327,7 +327,7 @@ async def translate(message: Message, gpt: GPT, state: FSMContext):
     response_text = await gpt.ask_once(
         message,
         prompt=prompt,
-        bot_message=answer_message)
+        output_message=answer_message)
 
     await safe_markdown_edit(answer_message, response_text)
 

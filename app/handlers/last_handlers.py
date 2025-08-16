@@ -20,7 +20,7 @@ async def wrong_image(message: Message, gpt: GPT):
     response = await gpt.dialog(
         message,
         prompt,
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response)
 
 
@@ -30,5 +30,5 @@ async def base_messages(message: Message, gpt: GPT):
     response = await gpt.ask_once(
         message,
         load_prompt('wait_command.txt'),
-        bot_message=answer_message)
+        output_message=answer_message)
     await safe_markdown_edit(answer_message, response)
