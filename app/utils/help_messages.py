@@ -9,9 +9,22 @@ from utils.help_load_res import get_cached_photo
 
 async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
     try:
-        return await message.answer(text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        escaped_text = escape_md(text)
+        return await message.answer(
+            escaped_text,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=reply_markup)
     except TelegramBadRequest:
-        return await message.answer(text, parse_mode=None, reply_markup=reply_markup)
+        try:
+            return await message.answer(
+                text,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup)
+        except TelegramBadRequest:
+            return await message.answer(
+                text,
+                parse_mode=None,
+                reply_markup=reply_markup)
 
 
 async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
@@ -19,17 +32,32 @@ async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
         print("Сообщение слишком длинное")
         return message
     try:
-        return await message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        escaped_text = escape_md(text)
+        return await message.edit_text(
+            escaped_text,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=reply_markup)
     except TelegramBadRequest:
-        return await message.edit_text(text, parse_mode=None, reply_markup=reply_markup)
+        try:
+            return await message.edit_text(
+                text,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup)
+        except TelegramBadRequest:
+            return await message.edit_text(
+                text,
+                parse_mode=None,
+                reply_markup=reply_markup)
 
 
-def escape_markdown_v2(text: str) -> str:
+def escape_md(text: str) -> str:
     """
-    Экранирует спецсимволы для Telegram MarkdownV2
+    Экранирует спецсимволы для Telegram MarkdownV2 кроме используемых в разметке
     """
-    escape_chars = r"_*[\]()~`>#+-=|{}.!\\"
-    return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)
+    _MDV2_RE = re.compile(r'([\[\]()>#+\-={}.!\\])')
+    if not text:
+        return text
+    return _MDV2_RE.sub(r'\\\1', text)
 
 
 async def safe_markdown_v2_send(message: Message, text: str):
@@ -57,22 +85,6 @@ def extract_urls(message: Message) -> list:
         urls = re.findall(url_pattern, text)
 
     return urls
-
-
-def extract_image_urls(message: Message):
-    IMAGE_EXTENSIONS = {
-        '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff', '.heic'
-    }
-    IMAGE_URL_PATTERNS = {'image', 'img', 'media', 'avatar'}
-    urls = extract_urls(message)
-    image_urls = []
-    for url in urls:
-        lower_url = str(url).lower()
-        if any(ext in lower_url for ext in IMAGE_EXTENSIONS):
-            image_urls.append(url)
-        elif any(pattern in lower_url for pattern in IMAGE_URL_PATTERNS):
-            image_urls.append(url)
-    return image_urls
 
 
 async def send_photo(message: Message, img_name: str):

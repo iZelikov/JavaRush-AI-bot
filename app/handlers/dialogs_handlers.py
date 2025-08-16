@@ -10,8 +10,8 @@ from keyboards.callbacks import TalkData
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
-from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo
-from utils.help_photo import recognize_photo
+from utils.help_messages import safe_markdown_edit, send_photo
+from utils.help_photo import recognize_photo, extract_image_urls
 from utils.help_load_res import load_text, load_prompt
 from utils.help_quiz import extract_answers, get_answers_keyboard, generate_quiz
 from utils.help_resume import next_question, final_question

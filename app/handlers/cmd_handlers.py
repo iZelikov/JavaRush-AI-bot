@@ -7,7 +7,7 @@ from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, 
 from utils.help_quiz import get_quiz_keyboard
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
-from utils.help_messages import send_photo
+from utils.help_messages import send_photo, safe_markdown_answer
 from utils.help_load_res import load_text
 
 cmd_router = Router()
@@ -19,7 +19,9 @@ async def cmd_start(message: Message, storage: AbstractStorage, state: FSMContex
     await storage.reset_history(message.from_user.id)
     help_text = load_text('help.txt')
     await send_photo(message, 'chat-gopota.jpg')
-    await message.answer(f'Превед, {message.from_user.first_name or "Медвед"}!')
+    await safe_markdown_answer(
+        message,
+        f'Превед _*{message.from_user.first_name or "Медвед"}*_')
     await message.answer(help_text, reply_markup=ReplyKeyboardRemove())
 
 
