@@ -59,3 +59,6 @@ def escape_md(text: str) -> str:
     if not text:
         return text
     return _MDV2_RE.sub(r'\\\1', text)
+
+def remove_md(text: str) -> str:
+    return re.sub(r'[_*~`|]', '', text)
