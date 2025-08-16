@@ -8,8 +8,9 @@ from redis.asyncio import Redis
 
 
 from config import REDIS_URL
+from keyboards.all_kbs import random_kb
 from storage.abstract_storage import AbstractStorage
-from utils.help_messages import escape_md
+from utils.help_messages import escape_md, safe_markdown_answer, safe_markdown_edit
 
 test_router = Router()
 
@@ -59,3 +60,20 @@ __Обрамление двойным подчёркиванием - подчё�
 ||Обрамление двойными вертикальными чертами <скрытый текст для спойлеров>||
 """
     await message.answer(escape_md(mark), parse_mode=ParseMode.MARKDOWN_V2)
+
+@test_router.message(Command('long'))
+async def long(message: Message):
+    length = message.text.split()[-1]
+    if length.isdigit():
+        n = int(length)
+        text = "".join("1" for i in range(n))
+        await safe_markdown_answer(message, text, reply_markup=random_kb())
+
+@test_router.message(Command('ledit'))
+async def ledit(message: Message):
+    length = message.text.split()[-1]
+    if length.isdigit():
+        n = int(length)
+        text = "".join("1" for i in range(n))
+        edit_msg = await message.answer("test test test")
+        await safe_markdown_edit(edit_msg, text, reply_markup=random_kb())

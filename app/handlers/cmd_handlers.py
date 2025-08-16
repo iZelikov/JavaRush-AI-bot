@@ -7,7 +7,8 @@ from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, 
 from utils.help_quiz import get_quiz_keyboard
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
-from utils.help_messages import send_photo, safe_markdown_answer
+from utils.help_messages import safe_markdown_answer
+from utils.help_photo import send_photo
 from utils.help_load_res import load_text
 
 cmd_router = Router()

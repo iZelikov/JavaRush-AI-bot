@@ -1,9 +1,11 @@
+import re
+
 from aiogram.types import Message
 
 from config import CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
 from utils.gpt import GPT
-from utils.help_load_res import load_prompt
-from utils.help_messages import safe_markdown_edit, extract_urls
+from utils.help_load_res import load_prompt, get_cached_photo
+from utils.help_messages import safe_markdown_edit
 
 
 async def recognize_photo(file_url: str, message: Message, gpt: GPT):
@@ -42,3 +44,32 @@ def extract_image_urls(message: Message):
         elif any(pattern in lower_url for pattern in IMAGE_URL_PATTERNS):
             image_urls.append(url)
     return image_urls
+
+
+async def send_photo(message: Message, img_name: str):
+    try:
+        photo = get_cached_photo(img_name)
+        await message.answer_photo(photo=photo)
+    except FileNotFoundError:
+        await message.answer('ERROR: Братан, кажись тут была картинка, но я её потерял...')
+    except Exception:
+        await message.answer('ERROR: Крепись братан, происходит неведомая фигня!')
+
+
+def extract_urls(message: Message) -> list:
+    urls = []
+    text = message.text or message.caption
+    if message.entities:
+        for entity in message.entities:
+            if entity.type == "url":
+                url = text[entity.offset: entity.offset + entity.length]
+                urls.append(url)
+
+            elif entity.type == "text_link":
+                urls.append(entity.url)
+
+    if not urls:
+        url_pattern = r'https?://[^\s]+'
+        urls = re.findall(url_pattern, text)
+
+    return urls
