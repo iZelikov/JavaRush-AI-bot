@@ -11,8 +11,9 @@ async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
         await safe_markdown_answer(message, text[4000:], reply_markup=reply_markup)
     try:
         escaped_text = escape_md(text)
+        collapsed_text = collapse_md(escaped_text)
         return await message.answer(
-            escaped_text,
+            collapsed_text,
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=reply_markup)
     except TelegramBadRequest:
@@ -34,8 +35,9 @@ async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
         await safe_markdown_answer(message, text[4000:], reply_markup=reply_markup)
     try:
         escaped_text = escape_md(text)
+        collapsed_text = collapse_md(escaped_text)
         return await message.edit_text(
-            escaped_text,
+            collapsed_text,
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=reply_markup)
     except TelegramBadRequest:
@@ -62,3 +64,6 @@ def escape_md(text: str) -> str:
 
 def remove_md(text: str) -> str:
     return re.sub(r'[_*~`|]', '', text)
+
+def collapse_md(text: str) ->str:
+    return re.sub(r'([*~]){2,}', r'\1', text)
