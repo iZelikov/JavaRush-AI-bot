@@ -10,11 +10,14 @@ from openai.types.chat import ChatCompletionChunk
 
 from storage.abstract_storage import AbstractStorage
 from utils.help_load_res import load_prompt
+from utils.help_messages import safe_markdown_edit
 
 logger = logging.getLogger(__name__)
 
 
 class GPT:
+    MAX_MESSAGE_LENGTH = 4000
+
     def __init__(self, gpt_key: str, db: AbstractStorage, base_url: Optional[str] = None):
         self.client = AsyncOpenAI(api_key=gpt_key, base_url=base_url)
         self.token = gpt_key
@@ -84,44 +87,60 @@ class GPT:
             stream: AsyncStream[ChatCompletionChunk],
             bot_message: Message = None) -> str:
 
+        full_text_parts = []
         buffer = []
+
         if bot_message:
-            bot_message = await bot_message.edit_text('...')
+            current_message = await bot_message.edit_text('...')
             last_update = asyncio.get_event_loop().time()
             update_interval = 1
 
             async for chunk in stream:
                 part = chunk.choices[0].delta.content
-                if part is not None:
-                    buffer.append(part)
+                if part is None:
+                    continue
+
+                buffer.append(part)
+                full_text_parts.append(part)
+
                 current_time = asyncio.get_event_loop().time()
                 if current_time - last_update >= update_interval and buffer:
-                    bot_message = await self._send_part(bot_message, buffer)
-                    last_update = current_time
+                    current_message = await self._send_part(current_message, buffer)
                     buffer = []
+                    last_update = current_time
 
             if buffer:
-                bot_message = await self._send_part(bot_message, buffer)
+                current_message = await self._send_part(current_message, buffer)
 
-            full_text = bot_message.text.lstrip('.')
+            await safe_markdown_edit(current_message, current_message.text)
+
+            full_text = ''.join(full_text_parts)
         else:
             async for chunk in stream:
                 part = chunk.choices[0].delta.content
                 if part:
-                    buffer.append(part)
-            full_text = ''.join(buffer)
+                    full_text_parts.append(part)
+            full_text = ''.join(full_text_parts)
 
         return full_text
 
     async def _send_part(self, message: Message, buffer: list[str]) -> Message:
-        new_part = ''.join(buffer)
-        if not new_part:
+        if not buffer:
             return message
 
-        new_text = f'{message.text}{new_part}'
+        new_part = ''.join(buffer)
+        if new_part == '':
+            return message
 
         try:
-            return await message.edit_text(new_text, parse_mode=None)
+            if len(message.text) + len(new_part) <= self.MAX_MESSAGE_LENGTH:
+                new_text = f'{message.text}{new_part}'
+                return await message.edit_text(new_text, parse_mode=None)
+            else:
+                await safe_markdown_edit(message, message.text.lstrip('.'))
+                new_message = await message.answer(new_part, parse_mode=None)
+                return new_message
+
         except Exception as e:
             print(f"Ошибка при редактировании сообщения: {e}")
             return message

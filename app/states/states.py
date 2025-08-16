@@ -14,6 +14,7 @@ class Quiz(StatesGroup):
     game = State()
 
 class Resume(StatesGroup):
+    personal_data = State()
     profession = State()
     education = State()
     skills = State()

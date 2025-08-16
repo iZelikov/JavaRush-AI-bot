@@ -10,7 +10,8 @@ from keyboards.callbacks import TalkData
 from states.states import ImageRecognition, RandomFacts, GPTDIalog, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
 from utils.gpt import GPT
-from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo, recognize_photo
+from utils.help_messages import safe_markdown_edit, extract_image_urls, send_photo
+from utils.help_photo import recognize_photo
 from utils.help_load_res import load_text, load_prompt
 from utils.help_quiz import extract_answers, get_answers_keyboard, generate_quiz
 from utils.help_resume import next_question, final_question
@@ -47,7 +48,7 @@ async def gpt_dialog(message: Message, gpt: GPT):
         message,
         load_prompt('gpt.txt'),
         bot_message=answer_message)
-    await safe_markdown_edit(answer_message, response_text)
+    # await safe_markdown_edit(answer_message, response_text)
 
 
 @dialog_router.message(F.photo, ImageRecognition.ready_to_accept)
@@ -132,7 +133,7 @@ async def quiz(message: Message, gpt: GPT):
             reply_markup=ReplyKeyboardRemove())
 
 
-@dialog_router.callback_query(F.data == 'restart_resume')
+@dialog_router.callback_query(StateFilter(*Resume.__states__), F.data == 'restart_resume')
 async def new_resume(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await state.set_state(Resume.profession)
@@ -190,7 +191,7 @@ async def accum_messages(message: Message, state: FSMContext):
     await state.update_data(current_data)
 
 
-@dialog_router.callback_query(F.data == 'sovet_reset')
+@dialog_router.callback_query(F.data == 'sovet_reset', StateFilter(*Sovet.__states__))
 async def sovet_reset(callback: CallbackQuery, storage: AbstractStorage, state: FSMContext):
     await state.clear()
     await state.set_state(Sovet.choose_entertainment)
@@ -286,6 +287,7 @@ async def robot_dialog(message: Message, gpt: GPT, state: FSMContext):
         bot_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
 
+
 @dialog_router.callback_query(Trans.translation, F.data == "other_lang")
 async def other_language(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -293,6 +295,7 @@ async def other_language(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     await state.set_state(Trans.translation)
     await callback.message.answer("Выбери Язык:", reply_markup=langs_choosing_kb())
+
 
 @dialog_router.callback_query(Trans.translation)
 async def set_language(callback: CallbackQuery, state: FSMContext):
@@ -302,9 +305,6 @@ async def set_language(callback: CallbackQuery, state: FSMContext):
     lang = callback.data.split('_')[1]
     await state.set_data({'lang': lang})
     await callback.message.answer(f"Готов переводить на *{lang}*.\nШли маляву!")
-
-
-from aiogram.types import Message
 
 
 @dialog_router.message(F.text, Trans.translation)

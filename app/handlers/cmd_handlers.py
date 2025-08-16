@@ -69,12 +69,13 @@ async def cmd_random(message: Message, storage: AbstractStorage, state: FSMConte
 @cmd_router.message(Command('resume'))
 async def cmd_resume(message: Message, storage: AbstractStorage, state: FSMContext):
     await state.clear()
-    await state.set_state(Resume.profession)
+    await state.set_state(Resume.personal_data)
     await storage.reset_history(message.from_user.id)
     await send_photo(message, 'resume.jpg')
     await message.answer(load_text('command_resume.txt'), reply_markup=ReplyKeyboardRemove())
     msg_text = load_text('resume.txt', 0)
-    await message.answer(msg_text, reply_markup=start_resume())
+    await message.answer(msg_text)
+    await message.answer("*Готов поделиться персональными данными с братвой?*", reply_markup=start_resume())
 
 
 @cmd_router.message(Command('sovet'))
