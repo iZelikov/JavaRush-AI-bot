@@ -6,26 +6,29 @@ from aiogram.types import Message
 
 MAX_TEXT_LENGTH = 4000
 
+
 async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
     if len(text) > MAX_TEXT_LENGTH:
         await safe_markdown_answer(message, text[:MAX_TEXT_LENGTH])
         await safe_markdown_answer(message, text[MAX_TEXT_LENGTH:], reply_markup=reply_markup)
+    collapsed_text = collapse_md(text)
+    escaped_text = escape_md(collapsed_text)
     try:
-        escaped_text = escape_md(text)
-        collapsed_text = collapse_md(escaped_text)
         return await message.answer(
-            collapsed_text,
+            escaped_text,
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=reply_markup)
     except TelegramBadRequest:
         try:
+            clear_text = remove_md2(collapsed_text)
             return await message.answer(
-                text,
+                clear_text,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=reply_markup)
         except TelegramBadRequest:
+            clear_text = remove_md_all(text)
             return await message.answer(
-                text,
+                clear_text,
                 parse_mode=None,
                 reply_markup=reply_markup)
 
@@ -34,21 +37,22 @@ async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
     if len(text) > MAX_TEXT_LENGTH:
         await safe_markdown_edit(message, text[:MAX_TEXT_LENGTH])
         await safe_markdown_answer(message, text[MAX_TEXT_LENGTH:], reply_markup=reply_markup)
-    escaped_text = escape_md(text)
-    collapsed_text = collapse_md(escaped_text)
+    collapsed_text = collapse_md(text)
+    escaped_text = escape_md(collapsed_text)
     try:
         return await message.edit_text(
-            collapsed_text,
+            escaped_text,
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=reply_markup)
     except TelegramBadRequest:
         try:
+            clear_text = remove_md2(collapsed_text)
             return await message.edit_text(
-                collapsed_text,
+                clear_text,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=reply_markup)
         except TelegramBadRequest:
-            clear_text = remove_md(text)
+            clear_text = remove_md_all(text)
             return await message.edit_text(
                 clear_text,
                 parse_mode=None,
@@ -66,10 +70,15 @@ def escape_md(text: str) -> str:
     e_text = re.sub(escaped2, replace2, e_text)
     return e_text
 
-def remove_md(text: str) -> str:
+
+def remove_md_all(text: str) -> str:
     return re.sub(r'[_*~`|]', '', text)
 
-def collapse_md(text: str) ->str:
+def remove_md2(text: str) -> str:
+    return re.sub(r'[~|]', '', text)
+
+
+def collapse_md(text: str) -> str:
     c_text = re.sub(r'([~*]){2,}', r'\1', text)
     c_text = re.sub(r'([|_]){3,}', r'\1\1', c_text)
     return c_text

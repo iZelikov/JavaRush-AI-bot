@@ -5,7 +5,7 @@ from states.states import GPTDIalog
 from utils.gpt import GPT
 from utils.help_audio import message_audio_to_text, message_text_to_audio
 from utils.help_load_res import load_prompt
-from utils.help_messages import safe_markdown_edit, remove_md
+from utils.help_messages import safe_markdown_edit, remove_md_all
 
 voice_router = Router()
 
@@ -32,7 +32,7 @@ async def gpt_audio_dialog(message: Message, gpt: GPT):
             output_message=answer_message)
         await safe_markdown_edit(answer_message, response_text)
         temp_msg = await message.answer('Щас спою...')
-        cleared_text = remove_md(response_text)
+        cleared_text = remove_md_all(response_text)
         await message_text_to_audio(message, cleared_text)
         await temp_msg.delete()
 

@@ -30,7 +30,8 @@ def extract_image_urls(message: Message):
     image_extensions = {
         '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff', '.heic'
     }
-    image_url_patterns = {'image', 'img', 'media', 'avatar'}
+    image_url_patterns = {'image', 'img', 'media', 'avatar', 'photo', 'foto',
+                          'picture'}
     urls = extract_urls(message)
     image_urls = []
     for url in urls:
