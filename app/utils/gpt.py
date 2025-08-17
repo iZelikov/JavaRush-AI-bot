@@ -1,5 +1,4 @@
 import asyncio
-import os
 import logging
 from typing import Optional, List, Dict, Union
 
@@ -9,23 +8,39 @@ from openai import RateLimitError, APIError, APITimeoutError, AsyncOpenAI, Async
 from openai.types.chat import ChatCompletionChunk
 
 from storage.abstract_storage import AbstractStorage
-from utils.help_load_res import load_prompt
-from utils.help_messages import safe_markdown_edit
 
 logger = logging.getLogger(__name__)
 
 
 class GPT:
 
-    def __init__(self, gpt_key: str, db: AbstractStorage, base_url: Optional[str] = None):
-        self.client = AsyncOpenAI(api_key=gpt_key, base_url=base_url)
-        self.token = gpt_key
-        self.base_url = base_url
+    def __init__(
+            self,
+            gpt_key: str,
+            model: str,
+            db: AbstractStorage,
+            base_prompt: str = "",
+            base_url: Optional[str] = None,
+            chat_gpt_key: Optional[str] = None,
+            chat_gpt_base_url: Optional[str] = None,
+            chat_gpt_model: Optional[str] = None
+    ):
+        self.client = AsyncOpenAI(
+            api_key=gpt_key,
+            base_url=base_url)
         self.storage = db
-        self.prompt = load_prompt('base_prompt.txt')
-        self.model = os.getenv('GPT_MODEL') or 'deepseek-r1-0528:free'
+        self.base_prompt = base_prompt
+        self.model = model
         self.max_tokens = 3000
         self.temperature = 0.8
+        self.chat_gpt_model = chat_gpt_model or model
+        self.chat_gpt_client = self.client
+        if chat_gpt_key:
+            self.chat_gpt_client = AsyncOpenAI(
+                api_key=chat_gpt_key,
+                base_url=chat_gpt_base_url)
+
+        # [print(f"{k}: {v}") for k, v in self.__dict__.items()]
 
     def _clear_think(self, text: str) -> str:
         return text.split('</think>')[-1].strip()
@@ -129,7 +144,7 @@ class GPT:
             return message
 
         try:
-            new_part = new_part.replace('\n',' ')
+            new_part = new_part.replace('\n', ' ')
             new_text = f'...{new_part}...'
             return await message.edit_text(new_text, parse_mode=None)
 
@@ -162,7 +177,7 @@ class GPT:
         history = await self.storage.get_history(user_id)
 
         messages = [
-            {"role": "system", "content": f"{self.prompt}\n{prompt}"},
+            {"role": "system", "content": f"{self.base_prompt}\n{prompt}"},
             *history,
             {"role": "user", "content": request_text}
         ]
@@ -188,7 +203,7 @@ class GPT:
         request_text = text or user_message.text or user_message.caption or ""
 
         messages = [
-            {"role": "system", "content": self.prompt + prompt},
+            {"role": "system", "content": self.base_prompt + prompt},
             {"role": "user", "content": request_text}
         ]
         await user_message.bot.send_chat_action(chat_id=user_message.chat.id, action=ChatAction.TYPING)
@@ -201,15 +216,9 @@ class GPT:
             self,
             img_url,
             prompt: str = "Опиши всё что видишь на картинке",
-            token: str = None,
-            base_url: str = None,
-            model=None
     ) -> str:
-
-        token = token or self.token
-        base_url = base_url or self.base_url
-        model = model or "gpt-4-turbo"
-        client = AsyncOpenAI(api_key=token, base_url=base_url)
+        model = self.chat_gpt_model
+        client = self.chat_gpt_client
         messages = [
             {
                 "role": "user",
@@ -224,6 +233,7 @@ class GPT:
                 ]
             }
         ]
+
         response = await self._send_chat_completion(
             messages=messages,
             model=model,

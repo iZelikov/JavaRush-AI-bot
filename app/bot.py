@@ -4,13 +4,14 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import BotCommandScopeDefault, MenuButtonCommands
 
-from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL
+from config import BOT_TOKEN, GPT_TOKEN, GPT_BASE_URL, GPT_MODEL, CHAT_GPT_TOKEN, CHAT_GPT_BASE_URL, CHAT_GPT_MODEL
 from handlers import main_router
 from middleware.injector_middleware import InjectorMiddleware
 from middleware.typing_middleware import TypingMiddleware
 from storage.factory import get_storage
 from utils.gpt import GPT
 from keyboards.all_kbs import set_commands
+from utils.help_load_res import load_prompt
 from utils.misc import on_start, on_shutdown
 
 
@@ -21,7 +22,16 @@ async def main() -> None:
               )
               )
     storage = get_storage()
-    gpt = GPT(GPT_TOKEN, storage, GPT_BASE_URL)
+    gpt = GPT(
+        gpt_key=GPT_TOKEN,
+        model=GPT_MODEL,
+        db=storage,
+        base_prompt=load_prompt('base_prompt.txt'),
+        base_url=GPT_BASE_URL,
+        chat_gpt_key=CHAT_GPT_TOKEN,
+        chat_gpt_base_url=CHAT_GPT_BASE_URL,
+        chat_gpt_model=CHAT_GPT_MODEL
+    )
     dp = Dispatcher(storage=storage)
     dp.update.middleware(InjectorMiddleware(gpt=gpt, storage=storage))
     dp.update.middleware(TypingMiddleware())
