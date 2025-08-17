@@ -125,9 +125,8 @@ async def select_theme(message: Message, gpt: GPT, state: FSMContext):
 async def quiz_answer(message: Message, gpt: GPT, state: FSMContext):
     await state.set_state(Quiz.answer)
     temp_msg = await message.answer(
-        'Принято!',
+        'Ответ принят!',
         reply_markup=ReplyKeyboardRemove())
-    await temp_msg.delete()
     answer_message = await message.answer('Внимание! Правильный ответ...')
     response_text = await gpt.dialog(
         message,
