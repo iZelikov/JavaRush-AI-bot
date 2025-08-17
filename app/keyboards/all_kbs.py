@@ -39,6 +39,17 @@ def random_kb():
     ))
     return builder.as_markup()
 
+def quiz_next_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text='Ещё вопрос',
+        callback_data='next_question'
+    )
+    builder.button(
+        text='Сменим тему',
+        callback_data='new_theme'
+    )
+    return builder.as_markup()
 
 def start_resume():
     builder = InlineKeyboardBuilder()

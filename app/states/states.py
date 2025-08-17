@@ -11,7 +11,8 @@ class RandomFacts(StatesGroup):
 
 class Quiz(StatesGroup):
     select_theme = State()
-    game = State()
+    question = State()
+    answer = State()
 
 class Resume(StatesGroup):
     personal_data = State()

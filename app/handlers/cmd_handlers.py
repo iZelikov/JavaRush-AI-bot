@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, langs_choosing_kb
-from utils.help_quiz import get_quiz_keyboard
+from utils.help_quiz import get_quiz_themes_keyboard
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
 from utils.help_messages import safe_markdown_answer
@@ -54,9 +54,15 @@ async def cmd_quiz(message: Message, storage: AbstractStorage, state: FSMContext
     await message.answer(
         load_text('command_quiz.txt', 0),
         reply_markup=ReplyKeyboardRemove())
-    await message.answer(
+    kb_message = await message.answer(
         load_text('command_quiz.txt', 1),
-        reply_markup=get_quiz_keyboard(6))
+        reply_markup=get_quiz_themes_keyboard(6))
+    await state.set_data({
+        "kb_message": {
+            "message_id": kb_message.message_id,
+            "chat_id": kb_message.chat.id
+        }
+    })
 
 
 @cmd_router.message(Command('random'))
