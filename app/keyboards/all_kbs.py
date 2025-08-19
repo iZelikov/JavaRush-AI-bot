@@ -151,7 +151,7 @@ def robots_kb():
 
 def langs_choosing_kb():
     langs = sorted(load_text('languages.txt').split())
-    return get_keyboard(langs)
+    return get_keyboard(langs, adjust='2')
 
 
 def trans_kb():
