@@ -3,11 +3,11 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
+from storage.abstract_storage import AbstractStorage
+from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, langs_choosing_kb
 from utils.help_logging import log_user
 from utils.help_quiz import get_quiz_themes_keyboard
-from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
-from storage.abstract_storage import AbstractStorage
 from utils.help_messages import safe_markdown_answer
 from utils.help_photo import send_photo
 from utils.help_load_res import load_text
