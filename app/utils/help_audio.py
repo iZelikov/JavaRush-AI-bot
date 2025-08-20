@@ -55,13 +55,13 @@ async def audio_to_text(audio_path: Path) -> Optional[str]:
             return recognizer.recognize_google(audio_data, language='ru-RU')
 
     except sr.UnknownValueError:
-        logger.error("Не удалось распознать речь")
+        logger.exception("Не удалось распознать речь")
         return None
     except sr.RequestError as e:
-        logger.error(f"Ошибка сервиса распознавания: {e}")
+        logger.exception(f"Ошибка сервиса распознавания: {e}")
         return None
     except Exception as e:
-        logger.error(f"Неизвестная ошибка распознавания: {e}")
+        logger.exception(f"Неизвестная ошибка распознавания: {e}")
         return None
 
 

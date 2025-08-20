@@ -2,6 +2,7 @@ import re
 
 from aiogram.types import Message
 
+from utils import logger
 from utils.gpt import GPT
 from utils.help_load_res import load_prompt, get_cached_photo
 from utils.help_messages import safe_markdown_edit
@@ -49,7 +50,9 @@ async def send_photo(message: Message, img_name: str):
         await message.answer_photo(photo=photo)
     except FileNotFoundError:
         await message.answer('ERROR: Братан, кажись тут была картинка, но я её потерял...')
-    except Exception:
+        logger.error(f'Картинка {img_name} не найдена')
+    except Exception as e:
+        logger.error(f"💢 Неизвестная ошибка при отправке картинки: {e}")
         await message.answer('ERROR: Крепись братан, происходит неведомая фигня!')
 
 

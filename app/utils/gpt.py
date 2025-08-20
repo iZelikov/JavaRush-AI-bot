@@ -80,7 +80,7 @@ class GPT:
                 )
 
         except RateLimitError:
-            logger.warning("Rate limit exceeded")
+            logger.warning("😤 Нету токенов - нету мультиков!")
             return 'ERROR: Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди чутка... Максимум до завтра.'
 
         except APITimeoutError:
