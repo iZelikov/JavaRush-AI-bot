@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
 from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, langs_choosing_kb
+from utils.help_logging import log_user
 from utils.help_quiz import get_quiz_themes_keyboard
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from storage.abstract_storage import AbstractStorage
@@ -16,6 +17,7 @@ cmd_router = Router()
 
 @cmd_router.message(CommandStart())
 async def cmd_start(message: Message, storage: AbstractStorage, state: FSMContext):
+    await log_user(message, state)
     await state.clear()
     await storage.reset_history(message.from_user.id)
     help_text = load_text('help.txt')

@@ -9,6 +9,7 @@ from handlers import main_router
 from middleware.injector_middleware import InjectorMiddleware
 from middleware.typing_middleware import TypingMiddleware
 from storage.factory import get_storage
+from utils import logger
 from utils.gpt import GPT
 from keyboards.all_kbs import set_commands
 from utils.help_load_res import load_prompt
@@ -55,4 +56,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Бот остановлен Администратором")
+        logger.info("Бот остановлен Администратором")

@@ -1,4 +1,3 @@
-import os
 import uuid
 import speech_recognition as sr
 from aiogram.types import Message, FSInputFile
@@ -8,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from config import TEMP_DIR
+from utils import logger
 
 
 def cleanup_temp_files(*file_paths: Path) -> None:
@@ -17,7 +17,7 @@ def cleanup_temp_files(*file_paths: Path) -> None:
             try:
                 file.unlink()
             except OSError:
-                pass
+                logger.error(f'Ошибка удаления временного файла {file}')
 
 
 async def text_to_audio(text: str, lang: str = 'ru') -> Optional[Path]:
@@ -42,7 +42,7 @@ async def text_to_audio(text: str, lang: str = 'ru') -> Optional[Path]:
         return ogg_path
 
     except Exception as e:
-        print(f"Ошибка преобразования текста в аудио: {e}")
+        logger.error(f"Ошибка преобразования текста в аудио: {e}")
         return None
 
 
@@ -55,13 +55,13 @@ async def audio_to_text(audio_path: Path) -> Optional[str]:
             return recognizer.recognize_google(audio_data, language='ru-RU')
 
     except sr.UnknownValueError:
-        print("Не удалось распознать речь")
+        logger.error("Не удалось распознать речь")
         return None
     except sr.RequestError as e:
-        print(f"Ошибка сервиса распознавания: {e}")
+        logger.error(f"Ошибка сервиса распознавания: {e}")
         return None
     except Exception as e:
-        print(f"Неизвестная ошибка распознавания: {e}")
+        logger.error(f"Неизвестная ошибка распознавания: {e}")
         return None
 
 
@@ -81,7 +81,7 @@ async def download_telegram_audio(
         return audio_path
 
     except Exception as e:
-        print(f"Ошибка скачивания файла: {e}")
+        logger.error(f"Ошибка скачивания файла: {e}")
         return None
 
 

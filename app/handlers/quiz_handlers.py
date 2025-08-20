@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from keyboards.all_kbs import quiz_next_kb
 from states.states import Quiz
+from utils import logger
 from utils.gpt import GPT
 from utils.help_messages import safe_markdown_edit
 from utils.help_load_res import load_text, load_prompt
@@ -38,7 +39,7 @@ async def select_theme(message: Message, gpt: GPT, state: FSMContext):
                 reply_markup=None
             )
         except Exception as e:
-            print(f"Не удалось удалить клавиатуру: {e}")
+            logger.exception(f"Не удалось удалить клавиатуру: {e}")
     await state.set_state(Quiz.question)
     await generate_quiz(message, gpt)
 

@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Optional, List, Dict, Union
 
 from aiogram.enums import ChatAction
@@ -8,8 +7,8 @@ from openai import RateLimitError, APIError, APITimeoutError, AsyncOpenAI, Async
 from openai.types.chat import ChatCompletionChunk
 
 from storage.abstract_storage import AbstractStorage
+from utils import logger
 
-logger = logging.getLogger(__name__)
 
 
 class GPT:
@@ -149,7 +148,7 @@ class GPT:
             return await message.edit_text(new_text, parse_mode=None)
 
         except Exception as e:
-            print(f"Ошибка при редактировании сообщения: {e}")
+            logger.error(f"Ошибка при редактировании сообщения: {e}")
             return message
 
     async def _get_text_from_stream(self,

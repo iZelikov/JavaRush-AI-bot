@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 
 from keyboards.all_kbs import langs_choosing_kb, trans_kb
 from states.states import Trans
+from utils import logger
 from utils.gpt import GPT
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit
@@ -43,7 +44,7 @@ async def translate(message: Message, gpt: GPT, state: FSMContext):
                 message_id=data["kb_message"]["message_id"]
             )
         except Exception as e:
-            print(f"Не удалось удалить сообщение: {e}")
+            logger.exception(f"Не удалось удалить сообщение: {e}")
 
     prompt = f'{load_prompt("trans.txt")}\n\nПереведи следующий текст на {lang}'
     answer_message = await message.answer(f'Переводит стрелки...')
