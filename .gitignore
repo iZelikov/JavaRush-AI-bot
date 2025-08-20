@@ -3,7 +3,9 @@ Technical Specification.md
 openai-token.txt
 app_secrets
 data/*
+!data/.gitkeep
 logs/*
+!logs/.gitkeep
 temp/
 Задание/
 
