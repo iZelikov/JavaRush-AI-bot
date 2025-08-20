@@ -2,8 +2,8 @@
 Technical Specification.md
 openai-token.txt
 app_secrets
-data/
-logs/
+data/*
+logs/*
 temp/
 Задание/
 
