@@ -6,6 +6,7 @@ from keyboards.all_kbs import quiz_next_kb
 from states.states import Quiz
 from utils import logger
 from utils.gpt import GPT
+from utils.help_dialogs import clear_callback
 from utils.help_messages import safe_markdown_edit
 from utils.help_load_res import load_text, load_prompt
 from utils.help_quiz import generate_quiz, get_quiz_themes_keyboard
@@ -17,8 +18,7 @@ quiz_router = Router()
 
 @quiz_router.callback_query(Quiz.select_theme)
 async def select_theme(callback: CallbackQuery, gpt: GPT, state: FSMContext):
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.answer()
+    await clear_callback(callback)
     theme = f"Тема: *{callback.data.split('_')[1]}*"
     await callback.message.answer(theme)
     await state.set_state(Quiz.question)
@@ -47,7 +47,7 @@ async def select_theme(message: Message, gpt: GPT, state: FSMContext):
 @quiz_router.message(Quiz.question)
 async def quiz_answer(message: Message, gpt: GPT, state: FSMContext):
     await state.set_state(Quiz.answer)
-    temp_msg = await message.answer(
+    await message.answer(
         'Ответ принят!',
         reply_markup=ReplyKeyboardRemove())
     answer_message = await message.answer('Внимание! Правильный ответ...')
@@ -75,8 +75,7 @@ async def quiz_answer(message: Message, gpt: GPT, state: FSMContext):
 
 @quiz_router.callback_query(Quiz.answer, F.data == 'next_question')
 async def quiz_next(callback: CallbackQuery, gpt: GPT, state: FSMContext):
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.answer()
+    await clear_callback(callback)
     await state.set_state(Quiz.question)
     await generate_quiz(
         callback,
@@ -86,8 +85,7 @@ async def quiz_next(callback: CallbackQuery, gpt: GPT, state: FSMContext):
 
 @quiz_router.callback_query(Quiz.answer, F.data == 'new_theme')
 async def quiz_new_theme(callback: CallbackQuery, gpt: GPT, state: FSMContext):
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.answer()
+    await clear_callback(callback)
     await state.set_state(Quiz.select_theme)
     kb_message = await callback.message.answer(
         load_text('command_quiz.txt', 1),

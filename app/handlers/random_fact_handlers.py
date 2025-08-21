@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from keyboards.all_kbs import random_kb
 from states.states import RandomFacts
 from utils.gpt import GPT
+from utils.help_dialogs import clear_callback
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit
 
@@ -22,8 +23,7 @@ async def random_fact(message: Message, gpt: GPT):
 
 @random_fact_router.callback_query(F.data == 'next_fact', RandomFacts.next_fact)
 async def random_fact(callback: CallbackQuery, gpt: GPT):
-    await callback.message.edit_reply_markup(reply_markup=None)
-    await callback.answer()
+    await clear_callback(callback)
     answer_message = await callback.message.answer('Вспоминает...')
     response = await gpt.dialog(
         callback,

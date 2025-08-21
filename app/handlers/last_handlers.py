@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 
 from utils.gpt import GPT
+from utils.help_dialogs import clear_callback
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit
 
@@ -10,8 +11,7 @@ last_router = Router()
 
 @last_router.callback_query()
 async def wrong_callback(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.edit_reply_markup(reply_markup=None)
+    await clear_callback(callback)
 
 @last_router.message(F.photo)
 async def wrong_image(message: Message, gpt: GPT):

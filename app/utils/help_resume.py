@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery
 
 from keyboards.all_kbs import resume_kb
 from utils.gpt import GPT
+from utils.help_dialogs import clear_callback
 from utils.help_load_res import load_text, load_prompt
 from utils.help_messages import safe_markdown_edit
 
@@ -14,8 +15,7 @@ async def next_question(
     resume_key = 'resume'
     question = load_text('resume.txt', question)
     if callback:
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.answer()
+        await clear_callback(callback)
         await callback.message.answer(question, reply_markup=resume_kb())
     data = await state.get_data()
     if not data:
@@ -32,8 +32,7 @@ async def final_question(
         question: int = 0, ):
     resume_key = 'resume'
     if callback:
-        await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.answer()
+        await clear_callback(callback)
         await callback.message.answer(load_text('resume.txt', question))
     data = await state.get_data()
     text = "\n".join(data[resume_key])
