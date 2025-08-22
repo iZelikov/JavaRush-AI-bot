@@ -17,8 +17,8 @@ def get_themes(number: int) -> list[str]:
 
 def extract_answers(text: str) -> tuple[str, list[str]]:
 
-    options = re.findall(r'{[1-4][^}]+}', text)
-    cleaned_text = re.sub(r'{[1-4][^}]+}', '', text)
+    options = re.findall(r'{[1-4].[^}]+}', text)
+    cleaned_text = re.sub(r'{[1-4].[^}]+}', '', text)
     cleaned_text = re.sub(r'(\s*\n\s*){2,}', '\n\n', cleaned_text)
     options = [op.strip('{}') for op in options]
     return cleaned_text, options
