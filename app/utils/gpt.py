@@ -10,7 +10,6 @@ from storage.abstract_storage import AbstractStorage
 from utils import logger
 
 
-
 class GPT:
 
     def __init__(
@@ -22,7 +21,7 @@ class GPT:
             base_url: Optional[str] = None,
             chat_gpt_key: Optional[str] = None,
             chat_gpt_base_url: Optional[str] = None,
-            chat_gpt_model: Optional[str] = None
+            chat_gpt_model: Optional[str] = None,
     ):
         self.client = AsyncOpenAI(
             api_key=gpt_key,
@@ -38,8 +37,6 @@ class GPT:
             self.chat_gpt_client = AsyncOpenAI(
                 api_key=chat_gpt_key,
                 base_url=chat_gpt_base_url)
-
-        # [print(f"{k}: {v}") for k, v in self.__dict__.items()]
 
     def _clear_think(self, text: str) -> str:
         return text.split('</think>')[-1].strip()
@@ -106,7 +103,7 @@ class GPT:
         if output_message:
             current_message = await output_message.edit_text('...')
             last_update = asyncio.get_event_loop().time()
-            update_interval = 0.5
+            update_interval = 1
 
             async for chunk in stream:
                 part = chunk.choices[0].delta.content
@@ -137,14 +134,19 @@ class GPT:
     async def _send_part(self, message: Message, buffer: list[str]) -> Message:
         if not buffer:
             return message
-
+        max_length = 3500
+        old_text = message.text
         new_part = ''.join(buffer)
         if new_part == '':
             return message
 
+        if len(old_text) > max_length:
+            new_part = '#'
+
         try:
-            new_part = new_part.replace('\n', ' ')
-            new_text = f'...{new_part}...'
+            # new_part = new_part.replace('\n', ' ')
+            # new_text = f'...{new_part}...'
+            new_text = f'{old_text}{new_part}'
             return await message.edit_text(new_text, parse_mode=None)
 
         except Exception as e:
