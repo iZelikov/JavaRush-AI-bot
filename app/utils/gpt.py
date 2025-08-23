@@ -141,11 +141,12 @@ class GPT:
             return message
 
         if len(old_text) > max_length:
+            loading_str = '\n\n=+=+= LOADING =+=+=\n'
+            if not loading_str in old_text:
+                old_text+=loading_str
             new_part = '#'
 
         try:
-            # new_part = new_part.replace('\n', ' ')
-            # new_text = f'...{new_part}...'
             new_text = f'{old_text}{new_part}'
             return await message.edit_text(new_text, parse_mode=None)
 

@@ -9,8 +9,12 @@ MAX_TEXT_LENGTH = 4000
 
 async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
     if len(text) > MAX_TEXT_LENGTH:
-        await safe_markdown_answer(message, text[:MAX_TEXT_LENGTH])
-        await safe_markdown_answer(message, text[MAX_TEXT_LENGTH:], reply_markup=reply_markup)
+        break_index = text[:MAX_TEXT_LENGTH].rfind('\n')
+        if break_index <= 0:
+            break_index = MAX_TEXT_LENGTH
+        await safe_markdown_answer(message, text[:break_index])
+        await safe_markdown_answer(message, text[break_index:], reply_markup=reply_markup)
+        return None
     collapsed_text = collapse_md(text)
     escaped_text = escape_md(collapsed_text)
     try:
@@ -35,8 +39,12 @@ async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
 
 async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
     if len(text) > MAX_TEXT_LENGTH:
-        await safe_markdown_edit(message, text[:MAX_TEXT_LENGTH])
-        await safe_markdown_answer(message, text[MAX_TEXT_LENGTH:], reply_markup=reply_markup)
+        break_index = text[:MAX_TEXT_LENGTH].rfind('\n')
+        if break_index <= 0:
+            break_index = MAX_TEXT_LENGTH
+        await safe_markdown_edit(message, text[:break_index])
+        await safe_markdown_answer(message, text[break_index:], reply_markup=reply_markup)
+        return None
     collapsed_text = collapse_md(text)
     escaped_text = escape_md(collapsed_text)
     try:
