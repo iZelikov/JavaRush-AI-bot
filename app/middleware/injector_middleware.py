@@ -3,7 +3,8 @@ from typing import Callable, Awaitable, Dict, Any
 from aiogram.types import TelegramObject
 
 from storage.abstract_storage import AbstractStorage
-from utils.gpt import GPT
+from gpt.gpt import GPT
+
 
 class InjectorMiddleware(BaseMiddleware):
     def __init__(self, gpt: GPT, storage: AbstractStorage):

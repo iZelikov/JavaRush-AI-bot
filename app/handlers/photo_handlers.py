@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message
 
 from states.states import ImageRecognition
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_photo import recognize_photo, extract_image_urls
 
 photo_router = Router()

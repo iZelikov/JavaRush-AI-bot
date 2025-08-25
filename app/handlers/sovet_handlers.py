@@ -8,7 +8,7 @@ from aiogram.types import Message, CallbackQuery
 from keyboards.all_kbs import genre_kb, entertain_kb
 from states.states import Sovet
 from storage.abstract_storage import AbstractStorage
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_dialogs import clear_all, clear_callback
 from utils.help_load_res import load_text
 from utils.help_photo import send_photo

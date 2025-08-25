@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from keyboards.all_kbs import quiz_next_kb
 from states.states import Quiz
 from utils import logger
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_dialogs import clear_callback
 from utils.help_messages import safe_markdown_edit
 from utils.help_load_res import load_text, load_prompt

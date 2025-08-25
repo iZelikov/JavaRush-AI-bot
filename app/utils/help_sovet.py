@@ -1,7 +1,7 @@
 from aiogram.types import CallbackQuery
 
 from keyboards.all_kbs import user_prefer_kb
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit
 

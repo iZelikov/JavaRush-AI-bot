@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery
 
 from keyboards.all_kbs import langs_choosing_kb, trans_kb
 from states.states import Trans
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_dialogs import clear_callback, delete_saved_message, save_message
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit

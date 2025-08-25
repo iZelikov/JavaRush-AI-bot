@@ -2,7 +2,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from keyboards.all_kbs import resume_kb
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_dialogs import clear_callback
 from utils.help_load_res import load_text, load_prompt
 from utils.help_messages import safe_markdown_edit

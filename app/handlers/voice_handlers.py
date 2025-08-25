@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from states.states import GPTDIalog
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_audio import message_audio_to_text, message_text_to_audio
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit, remove_md_all

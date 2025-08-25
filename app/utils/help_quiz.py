@@ -4,7 +4,7 @@ from random import sample
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 
 from keyboards.all_kbs import get_keyboard
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_load_res import load_text, load_prompt
 from utils.help_messages import safe_markdown_edit
 

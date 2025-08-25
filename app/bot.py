@@ -10,7 +10,7 @@ from middleware.injector_middleware import InjectorMiddleware
 from middleware.typing_middleware import TypingMiddleware
 from storage.factory import get_storage
 from utils import logger
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from keyboards.all_kbs import set_commands
 from utils.help_load_res import load_prompt
 from utils.misc import on_start, on_shutdown

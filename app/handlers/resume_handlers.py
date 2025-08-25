@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 
 from states.states import Resume
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_load_res import load_prompt
 from utils.help_messages import safe_markdown_edit
 from utils.help_resume import next_question, final_question

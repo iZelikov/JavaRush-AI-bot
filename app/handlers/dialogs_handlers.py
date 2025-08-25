@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 
 from states.states import GPTDIalog
 from storage.abstract_storage import AbstractStorage
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_dialogs import clear_all
 from utils.help_load_res import load_text, load_prompt
 from utils.help_messages import safe_markdown_edit

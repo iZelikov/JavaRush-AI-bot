@@ -3,7 +3,7 @@ import re
 from aiogram.types import Message
 
 from utils import logger
-from utils.gpt import GPT
+from gpt.gpt import GPT
 from utils.help_load_res import load_prompt, get_cached_photo
 from utils.help_messages import safe_markdown_edit
 
