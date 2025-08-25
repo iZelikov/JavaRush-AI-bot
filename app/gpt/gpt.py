@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Union
 
 from aiogram.enums import ChatAction
 from aiogram.types import Message, CallbackQuery
-from openai import RateLimitError, APIError, APITimeoutError, AsyncOpenAI, AsyncStream
+from openai import AsyncOpenAI, AsyncStream, RateLimitError, APITimeoutError, APIError
 from openai.types.chat import ChatCompletionChunk
 
 from storage.abstract_storage import AbstractStorage
