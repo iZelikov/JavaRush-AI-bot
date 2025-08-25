@@ -12,6 +12,7 @@ from storage.factory import get_storage
 from utils import logger
 from gpt.gpt import GPT
 from keyboards.all_kbs import set_commands
+from utils.help_gpt import manager, chat_gpt_manager
 from utils.help_load_res import load_prompt
 from utils.misc import on_start, on_shutdown
 
@@ -24,14 +25,10 @@ async def main() -> None:
               )
     storage = get_storage()
     gpt = GPT(
-        gpt_key=GPT_TOKEN,
-        model=GPT_MODEL,
-        db=storage,
+        manager,
+        storage=storage,
         base_prompt=load_prompt('base_prompt.txt'),
-        base_url=GPT_BASE_URL,
-        chat_gpt_key=CHAT_GPT_TOKEN,
-        chat_gpt_base_url=CHAT_GPT_BASE_URL,
-        chat_gpt_model=CHAT_GPT_MODEL
+        chat_gpt_clients_manager=chat_gpt_manager
     )
     dp = Dispatcher(storage=storage)
     dp.update.middleware(InjectorMiddleware(gpt=gpt, storage=storage))

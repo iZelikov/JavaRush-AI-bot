@@ -6,6 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from openai import AsyncOpenAI, AsyncStream, RateLimitError, APITimeoutError, APIError
 from openai.types.chat import ChatCompletionChunk
 
+from gpt.clients_manager import ClientsManager
 from storage.abstract_storage import AbstractStorage
 from utils import logger
 
@@ -14,29 +15,17 @@ class GPT:
 
     def __init__(
             self,
-            gpt_key: str,
-            model: str,
-            db: AbstractStorage,
+            clients_manager: ClientsManager,
+            storage: AbstractStorage,
             base_prompt: str = "",
-            base_url: Optional[str] = None,
-            chat_gpt_key: Optional[str] = None,
-            chat_gpt_base_url: Optional[str] = None,
-            chat_gpt_model: Optional[str] = None,
+            chat_gpt_clients_manager: ClientsManager = None
     ):
-        self.client = AsyncOpenAI(
-            api_key=gpt_key,
-            base_url=base_url)
-        self.storage = db
+        self.manager = clients_manager
+        self.chat_gpt_manager = chat_gpt_clients_manager or clients_manager
+        self.storage = storage
         self.base_prompt = base_prompt
-        self.model = model
         self.max_tokens = 3000
         self.temperature = 0.8
-        self.chat_gpt_model = chat_gpt_model or model
-        self.chat_gpt_client = self.client
-        if chat_gpt_key:
-            self.chat_gpt_client = AsyncOpenAI(
-                api_key=chat_gpt_key,
-                base_url=chat_gpt_base_url)
 
     def _clear_think(self, text: str) -> str:
         return text.split('</think>')[-1].strip()
@@ -44,16 +33,17 @@ class GPT:
     async def _send_chat_completion(
             self,
             messages: List[Dict],
-            model: Optional[str] = None,
+            manager: ClientsManager = None,
             max_tokens: Optional[int] = None,
             temperature: Optional[float] = None,
-            client: Optional[AsyncOpenAI] = None,
             stream: bool = False
     ) -> Union[str, AsyncStream[ChatCompletionChunk]]:
-        model = model or self.model
+        manager = manager or self.manager
+        manager.next_client()
+        client = manager.get_client().client
+        model = manager.get_client().model
         max_tokens = max_tokens or self.max_tokens
-        temperature = temperature if temperature is not None else self.temperature
-        client = client if client is not None else self.client
+        temperature = temperature or self.temperature
 
         try:
             if not stream:
@@ -143,7 +133,7 @@ class GPT:
         if len(old_text) > max_length:
             loading_str = '\n\n=+=+= LOADING =+=+=\n'
             if not loading_str in old_text:
-                old_text+=loading_str
+                old_text += loading_str
             new_part = '#'
 
         try:
@@ -219,8 +209,6 @@ class GPT:
             img_url,
             prompt: str = "Опиши всё что видишь на картинке",
     ) -> str:
-        model = self.chat_gpt_model
-        client = self.chat_gpt_client
         messages = [
             {
                 "role": "user",
@@ -238,8 +226,7 @@ class GPT:
 
         response = await self._send_chat_completion(
             messages=messages,
-            model=model,
-            client=client,
+            manager=self.chat_gpt_manager,
             stream=False
         )
         return response

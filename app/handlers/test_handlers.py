@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 
 
 from config import REDIS_URL
+from gpt.gpt import GPT
 from keyboards.all_kbs import random_kb
 from storage.abstract_storage import AbstractStorage
 from utils.help_messages import escape_md, safe_markdown_answer, safe_markdown_edit
@@ -18,6 +19,11 @@ test_router = Router()
 async def create_redis_pool() -> Redis:
     return Redis.from_url(REDIS_URL, decode_responses=True)
 
+
+@test_router.message(Command('next'))
+async def next_client(message: Message, gpt: GPT):
+    gpt.manager.next_client()
+    await message.answer(f'Установлен клтент: {gpt.manager.get_client().name}')
 
 @test_router.message(Command('test'))
 async def cmd_test(message: Message, storage: AbstractStorage):

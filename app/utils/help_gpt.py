@@ -2,18 +2,13 @@ from config import GPT_TOKEN, GPT_BASE_URL, GPT_MODEL, CHAT_GPT_TOKEN, CHAT_GPT_
 from gpt.clients_manager import ClientsManager
 from gpt.gpt_client import GPTClient
 
-client1 = GPTClient(GPT_TOKEN, GPT_MODEL, GPT_BASE_URL)
-client2 = GPTClient(CHAT_GPT_TOKEN, CHAT_GPT_MODEL, CHAT_GPT_BASE_URL)
+tokens = GPT_TOKEN.split(',')
+chat_gpt_tokens = CHAT_GPT_TOKEN.split(',')
 
 manager = ClientsManager()
-manager.add_client(client1)
-manager.add_client(client2)
+for token in tokens:
+    manager.add_client(GPTClient(token, GPT_MODEL, GPT_BASE_URL))
 
-print(manager.get_client())
-manager.next_client()
-print(manager.get_client())
-manager.next_client()
-print(manager.get_client())
-manager.next_client()
-print(manager.get_client())
-print(manager.get_client().model)
+chat_gpt_manager = ClientsManager()
+for token in chat_gpt_tokens:
+    chat_gpt_manager.add_client(GPTClient(token, CHAT_GPT_MODEL, CHAT_GPT_BASE_URL))

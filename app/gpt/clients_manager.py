@@ -23,4 +23,4 @@ class ClientsManager:
 
     def next_client(self):
         self._current_client = next(self._iclients)
-        logger.info(f'♻️ Установлен клиент: {self._current_client.name}')
+        # logger.info(f'♻️ Установлен клиент: {self._current_client.name}')
