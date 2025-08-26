@@ -46,7 +46,7 @@ async def next_sovet(callback: CallbackQuery, gpt: GPT, state: FSMContext):
     entertainments = json.loads(load_text("entertainments.json"))
     entertainment_name = entertainments[entertain]['name']
     genre_name = entertainments[entertain]['genres'][genre].split(' - ')[0]
-    text = f"Пользователь выбрал {entertainment_name}. Жанр - {genre_name}."
+    text = f"Хочу {entertainment_name}. Жанр - {genre_name}."
     await get_sovet(text, callback, gpt)
 
 
