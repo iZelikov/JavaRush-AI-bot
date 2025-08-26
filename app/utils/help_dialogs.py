@@ -32,16 +32,30 @@ async def save_message(key: str, message: Message, state: FSMContext):
         }
     })
 
+
 async def get_saved_message(key: str, state: FSMContext):
     data = await state.get_data()
     message_data = data.get(key)
     if message_data:
-        return message_data.get("chat_id"), message_data.get("message_id")
-    return None, None
+        return message_data.get("chat_id"), message_data.get("message_id"), message_data.get("text")
+    return None, None, None
+
+
+async def clear_saved_message_kb(key: str, state: FSMContext, bot: Bot):
+    chat_id, message_id, text = await get_saved_message(key, state)
+    if chat_id and message_id:
+        try:
+            await bot.edit_message_reply_markup(
+                chat_id=chat_id,
+                message_id=message_id,
+                reply_markup=None
+            )
+        except Exception as e:
+            logger.exception(f"Не удалось удалить клавиатуру: {e}")
 
 
 async def delete_saved_message(key: str, state: FSMContext, bot: Bot):
-    chat_id, message_id = await get_saved_message(key, state)
+    chat_id, message_id, text = await get_saved_message(key, state)
     if chat_id and message_id:
         try:
             await bot.delete_message(
@@ -50,5 +64,3 @@ async def delete_saved_message(key: str, state: FSMContext, bot: Bot):
             )
         except Exception as e:
             logger.exception(f"Не удалось удалить сообщение: {e}")
-
-

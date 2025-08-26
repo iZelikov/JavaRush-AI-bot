@@ -6,7 +6,7 @@ from aiogram.types import Message, ReplyKeyboardRemove
 from storage.abstract_storage import AbstractStorage
 from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
 from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, langs_choosing_kb
-from utils.help_dialogs import clear_all
+from utils.help_dialogs import clear_all, save_message
 from utils.help_logging import log_user
 from utils.help_quiz import get_quiz_themes_keyboard
 from utils.help_messages import safe_markdown_answer
@@ -70,8 +70,8 @@ async def cmd_random(message: Message, storage: AbstractStorage, state: FSMConte
     await state.set_state(RandomFacts.next_fact)
     await send_photo(message, 'random.jpg')
     await message.answer(load_text('command_random.txt', 0), reply_markup=ReplyKeyboardRemove())
-    await message.answer(load_text('command_random.txt', 1), reply_markup=random_kb())
-
+    kb = await message.answer(load_text('command_random.txt', 1), reply_markup=random_kb())
+    await save_message('random', kb, state)
 
 @cmd_router.message(Command('resume'))
 async def cmd_resume(message: Message, storage: AbstractStorage, state: FSMContext):
