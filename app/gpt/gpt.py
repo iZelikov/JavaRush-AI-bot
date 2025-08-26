@@ -26,23 +26,35 @@ class GPT:
         self.base_prompt = base_prompt
         self.max_tokens = 3000
         self.temperature = 0.8
+        self.last_empty_client = None
 
     def _clear_think(self, text: str) -> str:
         return text.split('</think>')[-1].strip()
+
+    async def _try_next_client(
+            self,
+            messages: List[Dict],
+            manager: ClientsManager = None,
+            stream: bool = False
+    ) -> Union[str, AsyncStream[ChatCompletionChunk]]:
+        if self.last_empty_client is None:
+            self.last_empty_client = manager.get_client()
+        elif self.last_empty_client == manager.get_client():
+            return 'ERROR: Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди до завтра.'
+        manager.next_client()
+        return await self._send_chat_completion(messages, manager, stream)
 
     async def _send_chat_completion(
             self,
             messages: List[Dict],
             manager: ClientsManager = None,
-            max_tokens: Optional[int] = None,
-            temperature: Optional[float] = None,
             stream: bool = False
     ) -> Union[str, AsyncStream[ChatCompletionChunk]]:
         manager = manager or self.manager
         client = manager.get_client().client
         model = manager.get_client().model
-        max_tokens = max_tokens or self.max_tokens
-        temperature = temperature or self.temperature
+        max_tokens = self.max_tokens
+        temperature = self.temperature
 
         try:
             if not stream:
@@ -53,20 +65,22 @@ class GPT:
                     temperature=temperature,
                 )
                 answer_text = response.choices[0].message.content.strip()
+                self.last_empty_client = None
                 return self._clear_think(answer_text)
             else:
-                return await client.chat.completions.create(
+                answer_stream = await client.chat.completions.create(
                     model=model,
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
                     stream=True
                 )
+                self.last_empty_client = None
+                return answer_stream
 
         except RateLimitError:
             logger.warning(f"😤 Нету токенов - нету мультиков! GPTClient {manager.get_client().name} исчерпал лимит")
-            manager.next_client()
-            return 'ERROR: Братан, GPT токен слегка протух, то бишь исчерпал лимит. Но не боись, у меня запасные есть. Повтори сообщение. Если не прокатит - обожди до завтра.'
+            return await self._try_next_client(messages, manager, stream)
 
         except APITimeoutError:
             logger.error("GPT API timeout")

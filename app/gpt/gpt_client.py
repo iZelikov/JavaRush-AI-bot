@@ -19,8 +19,3 @@ class GPTClient:
 
     def __str__(self):
         return f"GPTClient: {self.name}"
-
-    def __repr__(self):
-        return str(self)
-
-
