@@ -6,7 +6,7 @@ from keyboards.all_kbs import quiz_next_kb
 from states.states import Quiz
 from utils import logger
 from gpt.gpt import GPT
-from utils.help_dialogs import clear_callback
+from utils.help_dialogs import clear_callback, save_message, clear_saved_message_kb
 from utils.help_messages import safe_markdown_edit
 from utils.help_load_res import load_text, load_prompt
 from utils.help_quiz import generate_quiz, get_quiz_themes_keyboard
@@ -59,10 +59,12 @@ async def quiz_answer(message: Message, gpt: GPT, state: FSMContext):
         answer_message,
         response_text,
         reply_markup=quiz_next_kb())
+    await save_message('quiz', answer_message, state)
 
 
 @quiz_router.message(Quiz.answer)
 async def quiz_answer(message: Message, gpt: GPT, state: FSMContext):
+    await clear_saved_message_kb('quiz', state, message.bot)
     answer_message = await message.answer('Думает...')
     response_text = await gpt.dialog(
         message,
@@ -70,7 +72,8 @@ async def quiz_answer(message: Message, gpt: GPT, state: FSMContext):
         output_message=answer_message)
     await safe_markdown_edit(
         answer_message,
-        response_text)
+        response_text,
+        reply_markup=quiz_next_kb())
 
 
 @quiz_router.callback_query(Quiz.answer, F.data == 'next_question')
