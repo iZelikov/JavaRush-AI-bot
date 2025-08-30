@@ -3,6 +3,7 @@ from aiogram import Router
 from config import ENV
 from handlers.cmd_handlers import cmd_router
 from handlers.dialogs_handlers import dialog_router
+from handlers.gop_stop_handlers import gop_stop_router
 from handlers.last_handlers import last_router
 from handlers.photo_handlers import photo_router
 from handlers.quiz_handlers import quiz_router
@@ -22,6 +23,7 @@ if ENV == 'dev':
 main_router.include_routers(
     cmd_router,
     dialog_router,
+    gop_stop_router,
     quiz_router,
     photo_router,
     random_fact_router,

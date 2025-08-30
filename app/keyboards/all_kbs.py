@@ -1,10 +1,11 @@
 import json
+from random import choice
 
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 from config import BASE_DIR
-from keyboards.callbacks import TalkData
+from keyboards.callbacks import TalkData, DefenseData, AttackData
 from utils.help_load_res import load_text, load_prompt
 
 
@@ -27,6 +28,68 @@ def main_kb():
     return keyboard
 
 
+def gop_stop_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text='Бей первым!',
+        callback_data='fight')
+    builder.button(
+        text='Беги, Форест...',
+        callback_data='cancel_and_restart'
+    )
+    return builder.as_markup()
+
+def gop_stop_reload_kb():
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text='Погнали наши городских!',
+        callback_data='fight')
+    builder.button(
+        text='Не... С меня хватит.',
+        callback_data='cancel_and_restart'
+    )
+    return builder.as_markup()
+
+
+def attack_kb():
+    atk_json = json.loads(load_text('fight_attack_zones.json'))
+    builder = InlineKeyboardBuilder()
+    for key in atk_json:
+        name = choice(atk_json[key])
+        builder.button(
+            text=name,
+            callback_data=AttackData(
+                name=name,
+                target=key
+            )
+        )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def defence_kb():
+    builder = InlineKeyboardBuilder()
+    df_json = json.loads(load_text('fight_defense_zones.json'))
+    for block in df_json:
+        zone1 = block[0]
+        zone2 = block[1]
+        block1_key = list(zone1.keys())[0]
+        block1_value = choice(list(zone1.values())[0])
+        block2_key = list(zone2.keys())[0]
+        block2_value = choice(list(zone2.values())[0])
+        name = f'{block1_value} и {block2_value.lower()}'
+        builder.button(
+            text=name,
+            callback_data=DefenseData(
+                name=name,
+                block1=block1_key,
+                block2=block2_key
+            )
+        )
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def random_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
@@ -39,6 +102,7 @@ def random_kb():
     ))
     return builder.as_markup()
 
+
 def quiz_next_kb():
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -50,6 +114,7 @@ def quiz_next_kb():
         callback_data='new_theme'
     )
     return builder.as_markup()
+
 
 def start_resume():
     builder = InlineKeyboardBuilder()

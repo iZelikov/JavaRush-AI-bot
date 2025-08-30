@@ -3,10 +3,12 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardRemove
 
+from gpt.gpt import GPT
 from storage.abstract_storage import AbstractStorage
-from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans
+from states.states import GPTDIalog, ImageRecognition, RandomFacts, Quiz, Resume, Sovet, Talk, Trans, GopStop
 from keyboards.all_kbs import random_kb, entertain_kb, robots_kb, start_resume, langs_choosing_kb
 from utils.help_dialogs import clear_all, save_message
+from utils.help_gop_stop import gop_stop
 from utils.help_logging import log_user
 from utils.help_quiz import get_quiz_themes_keyboard
 from utils.help_messages import safe_markdown_answer
@@ -26,6 +28,15 @@ async def cmd_start(message: Message, storage: AbstractStorage, state: FSMContex
         message,
         f'Превед _*{message.from_user.first_name or "Медвед"}*_')
     await message.answer(help_text, reply_markup=ReplyKeyboardRemove())
+
+
+@cmd_router.message(Command('gopstop'))
+async def cmd_gop_stop(message: Message, storage: AbstractStorage, state: FSMContext, gpt: GPT):
+    await clear_all(message, state, storage)
+    await state.set_state(GopStop.attack)
+    await send_photo(message, 'gop-stop.jpg')
+    await message.answer(load_text('command_gopstop.txt', 0))
+    await gop_stop(gpt, message, state)
 
 
 @cmd_router.message(Command('gpt'))
@@ -56,12 +67,7 @@ async def cmd_quiz(message: Message, storage: AbstractStorage, state: FSMContext
     kb_message = await message.answer(
         load_text('command_quiz.txt', 1),
         reply_markup=get_quiz_themes_keyboard(6))
-    await state.set_data({
-        "kb_message": {
-            "message_id": kb_message.message_id,
-            "chat_id": kb_message.chat.id
-        }
-    })
+    await save_message("kb_quiz_themes", kb_message, state)
 
 
 @cmd_router.message(Command('random'))
@@ -72,6 +78,7 @@ async def cmd_random(message: Message, storage: AbstractStorage, state: FSMConte
     await message.answer(load_text('command_random.txt', 0), reply_markup=ReplyKeyboardRemove())
     kb = await message.answer(load_text('command_random.txt', 1), reply_markup=random_kb())
     await save_message('random', kb, state)
+
 
 @cmd_router.message(Command('resume'))
 async def cmd_resume(message: Message, storage: AbstractStorage, state: FSMContext):

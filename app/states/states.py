@@ -1,5 +1,12 @@
 from aiogram.fsm.state import State, StatesGroup
 
+class GopStop(StatesGroup):
+    attack = State()
+    defense = State()
+    win = State()
+    loose = State()
+    draw = State()
+
 class GPTDIalog(StatesGroup):
     active_dialog = State()
 

@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from states.states import GPTDIalog
 from storage.abstract_storage import AbstractStorage
 from gpt.gpt import GPT
-from utils.help_dialogs import clear_all
+from utils.help_dialogs import clear_all, clear_callback
 from utils.help_load_res import load_text, load_prompt
 from utils.help_messages import safe_markdown_edit
 from utils.help_photo import send_photo
@@ -20,16 +20,16 @@ async def handle_sticker(message: Message):
 
 @dialog_router.callback_query(F.data == 'cancel_and_restart')
 async def cancel_dialog(callback: CallbackQuery, gpt: GPT, state: FSMContext, storage: AbstractStorage):
-    await clear_all(callback, state, storage)
+    await clear_callback(callback)
     await send_photo(callback.message, 'chat-gopota.jpg')
     answer_message = await callback.message.answer('Подыскивает прощальные слова...')
-    response_text = await gpt.ask_once(
+    response_text = await gpt.dialog(
         callback,
         load_prompt('cancel.txt'), text="На сегодня хватит, мне пора идти",
         output_message=answer_message)
     await safe_markdown_edit(answer_message, response_text)
     help_text = load_text('help.txt')
-    await  callback.message.answer(help_text, reply_markup=ReplyKeyboardRemove())
+    await callback.message.answer(help_text, reply_markup=ReplyKeyboardRemove())
 
 
 @dialog_router.message(F.text, GPTDIalog.active_dialog)
