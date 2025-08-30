@@ -105,7 +105,7 @@ class GPT:
         if output_message:
             current_message = await output_message.edit_text('...')
             last_update = asyncio.get_event_loop().time()
-            update_interval = 1
+            update_interval = 2
 
             async for chunk in stream:
                 part = chunk.choices[0].delta.content

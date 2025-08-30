@@ -6,7 +6,7 @@ from keyboards.all_kbs import quiz_next_kb
 from states.states import Quiz
 from utils import logger
 from gpt.gpt import GPT
-from utils.help_dialogs import clear_callback, save_message, clear_saved_message_kb
+from utils.help_dialogs import clear_callback, save_message, clear_saved_message_kb, delete_saved_message
 from utils.help_messages import safe_markdown_edit
 from utils.help_load_res import load_text, load_prompt
 from utils.help_quiz import generate_quiz, get_quiz_themes_keyboard
@@ -30,16 +30,7 @@ async def select_theme(callback: CallbackQuery, gpt: GPT, state: FSMContext):
 
 @quiz_router.message(Quiz.select_theme)
 async def select_theme(message: Message, gpt: GPT, state: FSMContext):
-    data = await state.get_data()
-    if "kb_message" in data:
-        try:
-            await message.bot.edit_message_reply_markup(
-                chat_id=data["kb_message"]["chat_id"],
-                message_id=data["kb_message"]["message_id"],
-                reply_markup=None
-            )
-        except Exception as e:
-            logger.exception(f"Не удалось удалить клавиатуру: {e}")
+    await clear_saved_message_kb("kb_quiz_themes", state, message.bot)
     await state.set_state(Quiz.question)
     await generate_quiz(message, gpt)
 
