@@ -54,17 +54,26 @@ async def next_round(callback: CallbackQuery, callback_data: DefenseData | None,
     max_damage = 20
     min_damage = 10
     crit_chance = 0.3
-    await callback.message.edit_text(f"Защищаю *{callback_data.name.lower()}*")
+    block_zones = (("head", "chest"), ("chest", "stomach"), ("stomach", "legs"), ("legs", "head"))
+    attack_json = json.loads(load_text('fight_attack_zones.json'))
+    block_json = json.loads(load_text('fight_defense_zones.json'))
+    block1_key = callback_data.bk1
+    block1_index = callback_data.bv1
+    block1_value = block_json.get(block1_key)[block1_index]
+    block2_key = callback_data.bk2
+    block2_index = callback_data.bv2
+    block2_value = block_json.get(block2_key)[block2_index]
+    block_name = f"{block1_value.lower()} и {block2_value.lower()}"
+    block_text = f"Защищаю *{block_name}*"
+    await callback.message.edit_text(block_text)
     data = await state.get_data()
-    data.get('fight').get('user')['block'] = (callback_data.block1, callback_data.block2, callback_data.name)
+    data.get('fight').get('user')['block'] = (block1_key, block2_key, block_name)
     user_target = data.get('fight').get('user')['attack'][0]
     user_block = tuple(data.get('fight').get('user')['block'][:2])
     user_attack_text = f"Пользователь бьёт: {data.get('fight').get('user')['attack'][1]} ({user_target})"
     user_block_text = f"Пользователь защищает: {data.get('fight').get('user')['block'][2]} {user_block}"
-    attack_json = json.loads(load_text('fight_attack_zones.json'))
-    block_json = json.loads(load_text('fight_defense_zones.json'))
     bot_target = choice(list(attack_json.items()))[0]
-    bot_block = tuple([list(zone.keys())[0] for zone in choice(list(block_json))])
+    bot_block = tuple(zone for zone in choice(block_zones))
     bot_attack_text = f"Ты бьёшь: {bot_target}"
     bot_block_text = f"Ты защищаешь: {bot_block}"
     user_crit = random() <= crit_chance
@@ -74,7 +83,7 @@ async def next_round(callback: CallbackQuery, callback_data: DefenseData | None,
         bot_damage_text = "Твой удар блокирован"
         if bot_crit:
             bot_damage = randint(min_damage, max_damage) // 2
-            bot_damage_text = f"Ты пробиваешь блок критическим ударом на {bot_damage} hp"
+            bot_damage_text = f"Ты пробиваешь блок пользователя критическим ударом на {bot_damage} hp"
     else:
         bot_damage = randint(min_damage, max_damage)
         bot_damage_text = f"Ты нанёс пользователю {bot_damage} hp урона"
@@ -129,27 +138,27 @@ async def fight_description(callback: CallbackQuery, text: str, gpt: GPT):
 
 
 async def win_description(callback: CallbackQuery, text: str, gpt: GPT):
-    await send_photo(callback.message,'gop-stop-win.jpg')
     text += load_prompt('gop_stop_win.txt')
     await fight_description(callback, text, gpt)
+    await send_photo(callback.message,'gop-stop-win.jpg')
     kb_message = await callback.message.answer(
         "Ещё раунд?",
         reply_markup=gop_stop_reload_kb())
 
 
 async def loose_description(callback: CallbackQuery, text: str, gpt: GPT):
-    await send_photo(callback.message,'gop-stop-loose.jpg')
     text += load_prompt('gop_stop_loose.txt')
     await fight_description(callback, text, gpt)
+    await send_photo(callback.message,'gop-stop-loose.jpg')
     kb_message = await callback.message.answer(
         "Ещё раунд?",
         reply_markup=gop_stop_reload_kb())
 
 
 async def draw_description(callback: CallbackQuery, text: str, gpt: GPT):
-    await send_photo(callback.message,'gop-stop-draw.jpg')
     text += load_prompt('gop_stop_draw.txt')
     await fight_description(callback, text, gpt)
+    await send_photo(callback.message,'gop-stop-draw.jpg')
     kb_message = await callback.message.answer(
         "Ещё раунд?",
         reply_markup=gop_stop_reload_kb())

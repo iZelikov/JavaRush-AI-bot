@@ -7,9 +7,10 @@ class AttackData(CallbackData, prefix='AD'):
 
 
 class DefenseData(CallbackData, prefix='DD'):
-    name: str
-    block1: str
-    block2: str
+    bk1: str
+    bv1: int
+    bk2: str
+    bv2: int
 
 
 class TalkData(CallbackData, prefix='TD'):

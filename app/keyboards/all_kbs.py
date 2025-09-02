@@ -1,5 +1,5 @@
 import json
-from random import choice
+from random import choice, randrange
 
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
@@ -39,6 +39,7 @@ def gop_stop_kb():
     )
     return builder.as_markup()
 
+
 def gop_stop_reload_kb():
     builder = InlineKeyboardBuilder()
     builder.button(
@@ -68,27 +69,30 @@ def attack_kb():
 
 
 def defence_kb():
+    zones = (("head", "chest"), ("chest", "stomach"), ("stomach", "legs"), ("legs", "head"))
     builder = InlineKeyboardBuilder()
     df_json = json.loads(load_text('fight_defense_zones.json'))
-    for block in df_json:
-        zone1 = block[0]
-        zone2 = block[1]
-        block1_key = list(zone1.keys())[0]
-        block1_value = choice(list(zone1.values())[0])
-        block2_key = list(zone2.keys())[0]
-        block2_value = choice(list(zone2.values())[0])
-        name = f'{block1_value} и {block2_value.lower()}'
+    for zone in zones:
+        zone1_key = zone[0]
+        zone2_key = zone[1]
+        zone1_list = df_json[zone1_key]
+        zone2_list = df_json[zone2_key]
+        zone1_index = randrange(len(zone1_list))
+        zone2_index = randrange(len(zone2_list))
+        zone1_value = zone1_list[zone1_index]
+        zone2_value = zone2_list[zone2_index]
+        name = f'{zone1_value} и {zone2_value.lower()}'
         builder.button(
             text=name,
             callback_data=DefenseData(
-                name=name,
-                block1=block1_key,
-                block2=block2_key
+                bk1=zone1_key,
+                bv1=zone1_index,
+                bk2=zone2_key,
+                bv2=zone2_index
             )
         )
     builder.adjust(1)
     return builder.as_markup()
-
 
 def random_kb():
     builder = InlineKeyboardBuilder()
