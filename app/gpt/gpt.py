@@ -1,9 +1,10 @@
 import asyncio
-from typing import Optional, List, Dict, Union
+from typing import List, Dict, Union
 
+import httpx
 from aiogram.enums import ChatAction
 from aiogram.types import Message, CallbackQuery
-from openai import AsyncOpenAI, AsyncStream, RateLimitError, APITimeoutError, APIError
+from openai import AsyncStream, RateLimitError, APITimeoutError, APIError
 from openai.types.chat import ChatCompletionChunk
 
 from gpt.clients_manager import ClientsManager
@@ -94,6 +95,23 @@ class GPT:
             logger.exception(f"Неизвестная ошибка при запросе к GPT: {e}")
             return 'ERROR: Произошла неведомая фигня... GPT ушёл в отказ.'
 
+    @staticmethod
+    def _get_username_prompt(message: Message | CallbackQuery):
+        username = message.from_user.username or ""
+        fullname = message.from_user.full_name or username
+        prompt  = f"""
+        Пользователя зовут '{fullname}'.
+        Делай с этой информацией что хочешь, только мусорам не сливай.
+        Можешь попробовать вычислить пол пользователя и правильно к нему обращаться.
+        Или придумай для него чёткую гопницкую кликуху, на основе имени.
+        Себе тоже можешь грозную кликуху придумать, а потом её использовать в разговорах и драках.
+        Только смотри не забудь что придумал и не перепутай! 
+        И не используй кличку пользователя несколько раз в одном сообщении. 
+        Если пользователь попросит обращаться к нему по-другому то перестань использовать придуманную кличку. 
+        Используй вместо неё обращение, объявленное пользователем.             
+        """
+        return prompt
+
     async def _handle_stream(
             self,
             stream: AsyncStream[ChatCompletionChunk],
@@ -101,37 +119,64 @@ class GPT:
 
         full_text_parts = []
         buffer = []
+        error_occurred = False
 
-        if output_message:
-            current_message = await output_message.edit_text('...')
-            last_update = asyncio.get_event_loop().time()
-            update_interval = 2
+        try:
+            if output_message:
+                current_message = await output_message.edit_text('...')
+                last_update = asyncio.get_event_loop().time()
+                update_interval = 2
 
-            async for chunk in stream:
-                part = chunk.choices[0].delta.content
-                if part is None:
-                    continue
+                try:
+                    async for chunk in stream:
+                        part = chunk.choices[0].delta.content
+                        if part is None:
+                            continue
 
-                buffer.append(part)
-                full_text_parts.append(part)
+                        buffer.append(part)
+                        full_text_parts.append(part)
 
-                current_time = asyncio.get_event_loop().time()
-                if current_time - last_update >= update_interval and buffer:
+                        current_time = asyncio.get_event_loop().time()
+                        if current_time - last_update >= update_interval and buffer:
+                            current_message = await self._send_part(current_message, buffer)
+                            buffer = []
+                            last_update = current_time
+
+                except (httpx.RemoteProtocolError, httpx.ReadError) as e:
+                    logger.warning(f"Соединение прервано: {e}")
+                    error_occurred = True
+
+                if buffer:
                     current_message = await self._send_part(current_message, buffer)
-                    buffer = []
-                    last_update = current_time
 
-            if buffer:
-                current_message = await self._send_part(current_message, buffer)
+                if error_occurred:
+                    try:
+                        text = current_message.text or ''
+                        if text:
+                            text += "\n\n⚠️ Тут произошёл обрыв соединения с cерваком GPT... Пришлось сделать обрезание."
+                            await current_message.edit_text(text)
+                    except Exception as e:
+                        logger.error(f"Ошибка при добавлении сообщения об обрыве: {e}")
+
+            else:
+                try:
+                    async for chunk in stream:
+                        part = chunk.choices[0].delta.content
+                        if part:
+                            full_text_parts.append(part)
+                except (httpx.RemoteProtocolError, httpx.ReadError) as e:
+                    logger.warning(f"Соединение прервано: {e}")
+                    error_occurred = True
 
             full_text = ''.join(full_text_parts)
-        else:
-            async for chunk in stream:
-                part = chunk.choices[0].delta.content
-                if part:
-                    full_text_parts.append(part)
-            full_text = ''.join(full_text_parts)
-        return full_text
+            if error_occurred and not full_text:
+                full_text = "ERROR: Сервак GPT вообще не отдупляет! Попробуй ещё раз, вдруг ответит."
+
+            return full_text
+
+        except Exception as e:
+            logger.error(f"Неожиданная ошибка в _handle_stream: {e}")
+            return "ERROR: Произошла неведомая фигня при обработке ответа."
 
     async def _send_part(self, message: Message, buffer: list[str]) -> Message:
         if not buffer:
@@ -174,14 +219,15 @@ class GPT:
                      output_message: Message = None) -> str:
 
         user_id = user_message.from_user.id
+        username_prompt = self._get_username_prompt(user_message)
+
         if isinstance(user_message, CallbackQuery):
             user_message = user_message.message
         request_text = text or user_message.text or user_message.caption or ""
 
         history = await self.storage.get_history(user_id)
-
         messages = [
-            {"role": "system", "content": f"{self.base_prompt}\n{prompt}"},
+            {"role": "system", "content": f"{self.base_prompt}\n{username_prompt}\n{prompt}"},
             *history,
             {"role": "user", "content": request_text}
         ]
