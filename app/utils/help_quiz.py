@@ -1,10 +1,10 @@
 import re
-from random import sample
+from random import sample, random, choice
 
 from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 
-from keyboards.all_kbs import get_keyboard
 from gpt.gpt import GPT
+from keyboards.all_kbs import get_keyboard
 from utils.help_load_res import load_text, load_prompt
 from utils.help_messages import safe_markdown_edit
 
@@ -16,7 +16,6 @@ def get_themes(number: int) -> list[str]:
 
 
 def extract_answers(text: str) -> tuple[str, list[str]]:
-
     options = re.findall(r'{[1-4].[^}]+}', text)
     cleaned_text = re.sub(r'{[1-4].[^}]+}', '', text)
     cleaned_text = re.sub(r'(\s*\n\s*){2,}', '\n\n', cleaned_text)
@@ -58,3 +57,19 @@ async def generate_quiz(
         await reply_message.answer(
             'Твой ответ:',
             reply_markup=ReplyKeyboardRemove())
+
+
+def add_random_harry_potter(theme: str):
+    chance = 0.1
+    splits = [" и ", " - ", " & "]
+    harry_text = "Гарри Поттер"
+    if random() < chance:
+        for delimiter in splits:
+            if delimiter in theme:
+                parts = theme.split(delimiter)
+                text = choice(parts)
+                theme = f"{harry_text} и {text.lower()}"
+                break
+        else:
+            theme = f'{harry_text} и {theme.lower()}'
+    return theme

@@ -94,6 +94,7 @@ def defence_kb():
     builder.adjust(1)
     return builder.as_markup()
 
+
 def random_kb():
     builder = InlineKeyboardBuilder()
     builder.add(InlineKeyboardButton(
@@ -186,8 +187,9 @@ def get_keyboard(btn_names: list[str], keyboard_type: str = "inline", adjust: st
     if keyboard_type == "inline":
         builder = InlineKeyboardBuilder()
         for button in btn_names:
-            builder.button(text=button, callback_data=f"action_{button}")
+            builder.button(text=button, callback_data=f"kb_{button}")
         builder.adjust(*kb_adjust)
+
         return builder.as_markup()
     else:
         builder = ReplyKeyboardBuilder()
