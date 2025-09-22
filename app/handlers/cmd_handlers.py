@@ -26,7 +26,9 @@ async def cmd_start(message: Message, storage: AbstractStorage, state: FSMContex
     await send_photo(message, 'chat-gopota.jpg')
     await safe_markdown_answer(
         message,
-        f'Превед _*{message.from_user.first_name or "Медвед"}*_')
+        f'Превед, _*{message.from_user.first_name or "Медвед"}*_!\n'
+        f'Не стесняйся - жми на любую кнопку из меню.\n'
+        f'Братва сегодня добрая.')
     await message.answer(help_text, reply_markup=ReplyKeyboardRemove())
 
 
