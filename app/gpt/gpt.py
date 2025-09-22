@@ -29,7 +29,8 @@ class GPT:
         self.temperature = 0.8
         self.last_empty_client = None
 
-    def _clear_think(self, text: str) -> str:
+    @staticmethod
+    def _clear_think(text: str) -> str:
         return text.split('</think>')[-1].strip()
 
     async def _try_next_client(
@@ -41,6 +42,7 @@ class GPT:
         if self.last_empty_client is None:
             self.last_empty_client = manager.get_client()
         elif self.last_empty_client == manager.get_client():
+            self.last_empty_client = None
             return 'ERROR: Братан, GPT токен слегка протух, то бишь исчерпал лимит. Обожди до завтра.'
         manager.next_client()
         return await self._send_chat_completion(messages, manager, stream)
