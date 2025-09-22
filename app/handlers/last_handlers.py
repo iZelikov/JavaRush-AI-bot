@@ -27,7 +27,7 @@ async def wrong_image(message: Message, gpt: GPT):
 @last_router.message(F.text)
 async def base_messages(message: Message, gpt: GPT):
     answer_message = await message.answer('Думает...')
-    response = await gpt.ask_once(
+    response = await gpt.dialog(
         message,
         load_prompt('wait_command.txt'),
         output_message=answer_message)
