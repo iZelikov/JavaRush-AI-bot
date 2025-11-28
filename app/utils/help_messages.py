@@ -38,7 +38,11 @@ async def safe_markdown_answer(message: Message, text: str, reply_markup=None):
 
 
 async def safe_markdown_edit(message: Message, text: str, reply_markup=None):
-    if len(text) > MAX_TEXT_LENGTH:
+    if text is None or not text.strip():
+        await safe_markdown_edit(message, "Нет ответа :(")
+        return None
+
+    elif len(text) > MAX_TEXT_LENGTH:
         break_index = text[:MAX_TEXT_LENGTH].rfind('\n')
         if break_index <= 0:
             break_index = MAX_TEXT_LENGTH
@@ -81,6 +85,7 @@ def escape_md(text: str) -> str:
 
 def remove_md_all(text: str) -> str:
     return re.sub(r'[_*~`|]', '', text)
+
 
 def remove_md2(text: str) -> str:
     return re.sub(r'[~|]', '', text)
